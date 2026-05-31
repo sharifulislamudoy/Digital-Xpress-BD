@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,6 +14,7 @@ import { CartIcon } from "@/components/navbar/CartIcon";
 import { UserProfile } from "@/components/navbar/UserProfile";
 import { NavLinks } from "@/components/navbar/NavLinks";
 import { AuthButtons } from "@/components/navbar/AuthButtons";
+import { useSession } from "next-auth/react";
 
 
 // Animated Hamburger Button Component
@@ -32,29 +32,24 @@ const HamburgerButton = ({
       aria-label="Menu"
     >
       <span
-        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${
-          isOpen ? "rotate-45 translate-y-2" : ""
-        }`}
+        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${isOpen ? "rotate-45 translate-y-2" : ""
+          }`}
       />
       <span
-        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${
-          isOpen ? "opacity-0" : ""
-        }`}
+        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${isOpen ? "opacity-0" : ""
+          }`}
       />
       <span
-        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${
-          isOpen ? "-rotate-45 -translate-y-2" : ""
-        }`}
+        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${isOpen ? "-rotate-45 -translate-y-2" : ""
+          }`}
       />
     </button>
   );
 };
 
 const Navbar = () => {
-  // For UI demo, user is null (logged out). Replace with real auth later.
-  const user = null;
-
-  // Mobile menu state
+  const { data: session } = useSession();
+  const user = session?.user ?? null;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
