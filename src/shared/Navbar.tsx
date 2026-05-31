@@ -80,7 +80,7 @@ const Navbar = () => {
       className="bg-black sticky top-0 z-50"
     >
       {/* Mobile View */}
-      <div className="lg:hidden w-11/12 mx-auto">
+      <div className="lg:hidden max-w-7xl mx-auto">
         {/* Top Row with Hamburger, Logo, and Actions */}
         <div className="flex items-center justify-between py-2">
           <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ const Navbar = () => {
       {/* Desktop View */}
       <div className="hidden lg:block">
         {/* Top bar */}
-        <div className="w-11/12 mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center space-x-4">
               <motion.a
@@ -191,16 +191,16 @@ const Navbar = () => {
 
         {/* Bottom bar */}
         <div className="border-y border-gray-800">
-          <div className="w-11/12 mx-auto py-2">
+          <div className="max-w-7xl mx-auto py-2">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <Logo imageSrc="/favicon.png" className="ml-4" />
+                <Logo imageSrc="/favicon.png" className="" />
               </div>
               <div className="flex-1 flex justify-center">
                 <NavLinks className="flex-row space-x-6" />
               </div>
               <div className="flex-1 flex justify-end">
-                <div className="relative mr-4 w-64">
+                <div className="relative  w-64">
                   <input
                     type="text"
                     placeholder="Search products..."
