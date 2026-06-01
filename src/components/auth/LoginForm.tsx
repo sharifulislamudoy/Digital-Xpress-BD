@@ -16,7 +16,7 @@ import {
 } from "react-icons/fa";
 
 const schema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  identifier: z.string().min(1, "Email or phone is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -78,13 +78,13 @@ export const LoginForm = () => {
     setServerError("");
     try {
       const result = await signIn("credentials", {
-        email: data.email,
+        identifier: data.identifier,
         password: data.password,
         redirect: false,
       });
 
       if (result?.error) {
-        setServerError("Invalid email or password");
+        setServerError("Invalid credentials");
       } else if (result?.ok) {
         router.push("/");
         router.refresh();
@@ -140,17 +140,17 @@ export const LoginForm = () => {
             >
               <div>
                 <label className="block text-gray-200 text-sm font-medium mb-2">
-                  Email Address
+                  Email or Phone Number
                 </label>
                 <input
-                  type="email"
-                  {...register("email")}
+                  type="text"
+                  {...register("identifier")}
                   className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-                  placeholder="you@example.com"
+                  placeholder="you@example.com or +1234567890"
                   disabled={isLoading}
                 />
-                {errors.email && (
-                  <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>
+                {errors.identifier && (
+                  <p className="text-red-400 text-xs mt-1">{errors.identifier.message}</p>
                 )}
               </div>
 

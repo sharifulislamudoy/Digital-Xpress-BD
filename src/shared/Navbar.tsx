@@ -16,7 +16,6 @@ import { NavLinks } from "@/components/navbar/NavLinks";
 import { AuthButtons } from "@/components/navbar/AuthButtons";
 import { useSession } from "next-auth/react";
 
-
 // Animated Hamburger Button Component
 const HamburgerButton = ({
   isOpen,
@@ -32,16 +31,19 @@ const HamburgerButton = ({
       aria-label="Menu"
     >
       <span
-        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${isOpen ? "rotate-45 translate-y-2" : ""
-          }`}
+        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${
+          isOpen ? "rotate-45 translate-y-2" : ""
+        }`}
       />
       <span
-        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${isOpen ? "opacity-0" : ""
-          }`}
+        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${
+          isOpen ? "opacity-0" : ""
+        }`}
       />
       <span
-        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${isOpen ? "-rotate-45 -translate-y-2" : ""
-          }`}
+        className={`w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-out ${
+          isOpen ? "-rotate-45 -translate-y-2" : ""
+        }`}
       />
     </button>
   );
@@ -79,7 +81,7 @@ const Navbar = () => {
       transition={{ duration: 0.5, type: "spring", stiffness: 120 }}
       className="bg-black sticky top-0 z-50"
     >
-      {/* Mobile View */}
+      {/* Mobile View – keep unchanged */}
       <div className="lg:hidden max-w-7xl mx-auto">
         {/* Top Row with Hamburger, Logo, and Actions */}
         <div className="flex items-center justify-between py-2">
@@ -126,18 +128,28 @@ const Navbar = () => {
               className="absolute left-0 right-0 bg-black border-t border-gray-800 shadow-lg z-50 p-4 overflow-hidden"
               style={{ top: "100%" }}
             >
-              {/* Pass onLinkClick to close menu when a link is clicked */}
               <NavLinks onLinkClick={handleLinkClick} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Desktop View */}
+      {/* Desktop View – new layout */}
       <div className="hidden lg:block max-w-7xl mx-auto">
-        {/* Top bar */}
-        <div className="">
-          <div className="flex items-center justify-between py-2">
+        {/* Top bar: Logo (left) | NavLinks (center) | Social icons (right) */}
+        <div className="flex items-center justify-between py-2">
+          {/* Logo */}
+          <div className="flex-1">
+            <Logo imageSrc="/favicon.png" />
+          </div>
+
+          {/* Navigation links */}
+          <div className="flex-1 flex justify-center">
+            <NavLinks className="flex-row space-x-6" />
+          </div>
+
+          {/* Social icons */}
+          <div className="flex-1 flex justify-end">
             <div className="flex items-center space-x-4">
               <motion.a
                 whileHover={{ scale: 1.1, color: "#f97316" }}
@@ -176,7 +188,26 @@ const Navbar = () => {
                 <FaInstagram className="w-5 h-5" />
               </motion.a>
             </div>
-            <div className="flex items-center space-x-4">
+          </div>
+        </div>
+
+        {/* Bottom bar: Search bar (takes most space) | Actions (auth/cart/user) */}
+        <div className="border-t border-gray-800 py-2">
+          <div className="flex items-center gap-4">
+            {/* Search – takes available width (≈3/4) */}
+            <div className="flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  className="w-full bg-gray-800 rounded-full py-2 px-4 pl-10 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <FaSearch className="absolute left-3 top-3 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Right side actions – shrink to fit */}
+            <div className="flex items-center space-x-4 shrink-0">
               {user ? (
                 <>
                   <CartIcon itemCount={8} subtotal={999} />
@@ -185,30 +216,6 @@ const Navbar = () => {
               ) : (
                 <AuthButtons />
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-y border-gray-800">
-          <div className="py-2">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <Logo imageSrc="/favicon.png" className="" />
-              </div>
-              <div className="flex-1 flex justify-center">
-                <NavLinks className="flex-row space-x-6" />
-              </div>
-              <div className="flex-1 flex justify-end">
-                <div className="relative  w-64">
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    className="w-full bg-gray-800 rounded-full py-1 px-4 pl-10 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                  <FaSearch className="absolute left-3 top-2 text-gray-400" />
-                </div>
-              </div>
             </div>
           </div>
         </div>
