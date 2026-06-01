@@ -17,7 +17,6 @@ import {
 } from "react-icons/fa";
 import { Logo } from "@/components/navbar/Logo";
 
-
 const Footer = () => {
   const [showScroll, setShowScroll] = useState(false);
   const pathname = usePathname();
@@ -61,11 +60,10 @@ const Footer = () => {
     },
   };
 
-  // Helper to determine active class
   const isActive = (href: string) => pathname === href;
 
   return (
-    <footer className="bg-gray-950 text-gray-300 pt-16 pb-8 px-4 md:px-10 lg:px-24 relative">
+    <footer className="bg-gray-950 text-gray-300 pt-16 pb-8 relative">
       {/* Scroll to Top Button */}
       {showScroll && (
         <motion.button
@@ -83,6 +81,7 @@ const Footer = () => {
         </motion.button>
       )}
 
+      {/* Main content container – exactly like the navbar's inner wrapper */}
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial="hidden"
@@ -101,7 +100,7 @@ const Footer = () => {
             <div className="flex space-x-4">
               <motion.a
                 whileHover={{ scale: 1.2, color: "#f97316" }}
-                href="#"
+                href="https://www.facebook.com/digitalxpressbd1"
                 className="text-gray-400 hover:text-orange-400 transition-colors"
               >
                 <FaFacebook className="text-xl" />
@@ -137,7 +136,7 @@ const Footer = () => {
             </div>
           </motion.div>
 
-          {/* Quick Links with active class */}
+          {/* Quick Links */}
           <motion.div variants={fadeInUp} className="space-y-5">
             <h4 className="text-lg font-semibold text-white">Quick Links</h4>
             <ul className="space-y-3">
@@ -165,7 +164,7 @@ const Footer = () => {
             </ul>
           </motion.div>
 
-          {/* Categories with active class */}
+          {/* Categories */}
           <motion.div variants={fadeInUp} className="space-y-5">
             <h4 className="text-lg font-semibold text-white">Categories</h4>
             <ul className="space-y-3">
@@ -256,6 +255,7 @@ const Footer = () => {
             })}
           </div>
         </motion.div>
+
         <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}

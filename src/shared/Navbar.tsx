@@ -134,14 +134,14 @@ const Navbar = () => {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block max-w-7xl mx-auto">
         {/* Top bar */}
-        <div className="max-w-7xl mx-auto">
+        <div className="">
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center space-x-4">
               <motion.a
                 whileHover={{ scale: 1.1, color: "#f97316" }}
-                href="https://facebook.com"
+                href="https://www.facebook.com/digitalxpressbd1/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-orange-500"
@@ -191,7 +191,7 @@ const Navbar = () => {
 
         {/* Bottom bar */}
         <div className="border-y border-gray-800">
-          <div className="max-w-7xl mx-auto py-2">
+          <div className="py-2">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <Logo imageSrc="/favicon.png" className="" />
