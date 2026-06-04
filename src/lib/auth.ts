@@ -52,24 +52,29 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.accessToken = (user as any).accessToken;
       }
-      if (account?.provider === "google" || account?.provider === "facebook") {
-        // Sync OAuth user to backend
+
+      // Sync OAuth user (Google, Facebook, etc.) to backend without Account table
+      if (account && (account.provider === "google")) {
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/oauth-sync`, {
+          // Wait for sync to ensure user exists in our DB
+          const syncRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/oauth-sync`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name: token.name,
               email: token.email,
               image: token.picture,
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
             }),
           });
+          const syncData = await syncRes.json();
+          if (syncData.success && syncData.user) {
+            token.id = syncData.user.id;
+          }
         } catch (e) {
           console.error("OAuth sync failed", e);
         }
       }
+
       return token;
     },
     async session({ session, token }) {
