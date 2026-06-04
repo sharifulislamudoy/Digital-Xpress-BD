@@ -82,7 +82,7 @@ const Footer = () => {
       )}
 
       {/* Main content container – exactly like the navbar's inner wrapper */}
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4">
         <motion.div
           initial="hidden"
           whileInView="visible"

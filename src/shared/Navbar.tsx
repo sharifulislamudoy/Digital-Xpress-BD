@@ -282,10 +282,10 @@ const UserDrawer = ({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-gray-950 shadow-2xl z-[160] flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-[#141414] shadow-2xl z-[160] flex flex-col"
             >
               {/* Drawer Header */}
-              <div className="p-5 border-b border-gray-800 flex justify-between items-center">
+              <div className="p-5 border-b border-orange-500 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-white">Account</h2>
                 <button
                   onClick={onClose}
