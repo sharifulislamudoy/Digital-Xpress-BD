@@ -1,3 +1,7 @@
+// ============================================================================
+// Navbar.tsx - Complete Updated Component
+// ============================================================================
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -16,12 +20,14 @@ import {
   FaPhoneAlt,
   FaEnvelope,
   FaHeart,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 import { Logo } from "@/components/navbar/Logo";
 import { CartIcon } from "@/components/navbar/CartIcon";
-import { NavLinks } from "@/components/navbar/NavLinks";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 
 // ============================================================================
@@ -381,17 +387,284 @@ const UserDrawer = ({
 };
 
 // ============================================================================
-// Main Navbar Component with scroll‑driven bounce
+// Mobile Left Drawer Navigation
+// ============================================================================
+const MobileDrawer = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  const [isMoreExpanded, setIsMoreExpanded] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  // More submenu items
+  const moreItems = [
+    { name: "Blog", href: "/blog" },
+    { name: "About Us", href: "/about" },
+    { name: "Contact Us", href: "/contact" },
+    { name: "Refund and Return Policy", href: "/refund-policy" },
+    { name: "Shipping and Delivery Policy", href: "/shipping-policy" },
+    { name: "Terms of Service", href: "/terms" },
+  ];
+
+  // Main nav items
+  const mainNavItems = [
+    { name: "Home", href: "/" },
+    { name: "Products", href: "/products" },
+  ];
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) onClose();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        drawerRef.current &&
+        !drawerRef.current.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
+
+  const handleLinkClick = () => {
+    setIsMoreExpanded(false);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-[140]"
+            onClick={onClose}
+          />
+          <motion.div
+            ref={drawerRef}
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed top-0 left-0 bottom-0 w-full max-w-xs bg-[#141414] shadow-2xl z-[150] flex flex-col"
+          >
+            <div className="p-5 border-b border-orange-500 flex justify-between items-center">
+              <Logo imageSrc="/favicon.png" />
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white transition"
+              >
+                <FaTimes size={22} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              <ul className="space-y-4">
+                {mainNavItems.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={handleLinkClick}
+                      className={`block py-2 text-lg transition-colors ${
+                        pathname === item.href
+                          ? "text-orange-500 font-semibold"
+                          : "text-white hover:text-orange-400"
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+
+                {/* More Item with Expandable Submenu */}
+                <li>
+                  <button
+                    onClick={() => setIsMoreExpanded(!isMoreExpanded)}
+                    className="w-full flex items-center justify-between py-2 text-lg text-white hover:text-orange-400 transition-colors"
+                  >
+                    <span>More</span>
+                    {isMoreExpanded ? (
+                      <FaChevronUp className="text-orange-500" />
+                    ) : (
+                      <FaChevronDown className="text-gray-400" />
+                    )}
+                  </button>
+
+                  <AnimatePresence>
+                    {isMoreExpanded && (
+                      <motion.ul
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="mt-2 ml-4 space-y-2 overflow-hidden"
+                      >
+                        {moreItems.map((item) => (
+                          <li key={item.href}>
+                            <Link
+                              href={item.href}
+                              onClick={handleLinkClick}
+                              className={`block py-2 text-sm transition-colors ${
+                                pathname === item.href
+                                  ? "text-orange-500 font-semibold"
+                                  : "text-gray-300 hover:text-orange-400"
+                              }`}
+                            >
+                              {item.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
+                </li>
+              </ul>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// ============================================================================
+// Desktop Navigation Links with More Dropdown
+// ============================================================================
+const DesktopNavLinks = ({ className = "" }: { className?: string }) => {
+  const pathname = usePathname();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const moreItems = [
+    { name: "Blog", href: "/blog" },
+    { name: "About Us", href: "/about" },
+    { name: "Contact Us", href: "/contact" },
+    { name: "Refund and Return Policy", href: "/refund-policy" },
+    { name: "Shipping and Delivery Policy", href: "/shipping-policy" },
+    { name: "Terms of Service", href: "/terms" },
+  ];
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsMoreOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsMoreOpen(false);
+    }, 150);
+  };
+
+  return (
+    <ul className={`flex items-center space-x-6 ${className}`}>
+      <li>
+        <Link
+          href="/"
+          className={`transition-colors ${
+            pathname === "/"
+              ? "text-orange-500 font-semibold"
+              : "text-white hover:text-orange-400"
+          }`}
+        >
+          Home
+        </Link>
+      </li>
+      <li>
+        <Link
+          href="/products"
+          className={`transition-colors ${
+            pathname === "/products"
+              ? "text-orange-500 font-semibold"
+              : "text-white hover:text-orange-400"
+          }`}
+        >
+          Products
+        </Link>
+      </li>
+
+      {/* More Dropdown */}
+      <li
+        className="relative"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <button
+          className={`flex items-center gap-1 transition-colors ${
+            moreItems.some((item) => pathname === item.href)
+              ? "text-orange-500 font-semibold"
+              : "text-white hover:text-orange-400"
+          }`}
+        >
+          <span>More</span>
+          <FaChevronDown
+            className={`text-xs transition-transform duration-200 ${
+              isMoreOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        <AnimatePresence>
+          {isMoreOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="absolute left-0 mt-2 w-64 bg-[#141414] border border-gray-800 rounded-lg shadow-xl z-50"
+            >
+              <ul className="py-2">
+                {moreItems.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`block px-4 py-2 text-sm transition-colors ${
+                        pathname === item.href
+                          ? "text-orange-500 bg-gray-800/50"
+                          : "text-gray-300 hover:text-orange-400 hover:bg-gray-800/30"
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </li>
+    </ul>
+  );
+};
+
+// ============================================================================
+// Main Navbar Component with scroll‑driven bounce and Left Drawer for Mobile
 // ============================================================================
 const Navbar = () => {
   const { data: session } = useSession();
   const user = session?.user ?? null;
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
-
-  // ---- Scroll state for collapse effect ----
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -401,24 +674,6 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target as Node)
-      ) {
-        setMobileMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleLinkClick = () => {
-    setMobileMenuOpen(false);
-  };
 
   return (
     <>
@@ -430,7 +685,6 @@ const Navbar = () => {
       >
         {/* ==================== MOBILE VIEW ==================== */}
         <div className="lg:hidden max-w-7xl mx-auto px-4">
-          {/* Mobile row with bounce on height change */}
           <motion.div
             layout
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -440,8 +694,8 @@ const Navbar = () => {
           >
             <div className="flex items-center gap-2">
               <HamburgerButton
-                isOpen={mobileMenuOpen}
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                isOpen={isMobileDrawerOpen}
+                onClick={() => setIsMobileDrawerOpen(true)}
               />
               <Logo imageSrc="/favicon.png" />
             </div>
@@ -469,28 +723,10 @@ const Navbar = () => {
               </button>
             </div>
           </motion.div>
-
-          {/* Mobile Dropdown Menu */}
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                ref={mobileMenuRef}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute left-0 right-0 bg-black border-t border-gray-800 shadow-lg z-50 p-4 overflow-hidden"
-                style={{ top: "100%" }}
-              >
-                <NavLinks onLinkClick={handleLinkClick} />
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* ==================== DESKTOP VIEW ==================== */}
         <div className="hidden lg:block max-w-7xl mx-auto px-4">
-          {/* Wrap both rows in a layout group for spring animation */}
           <motion.div
             layout
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -561,17 +797,14 @@ const Navbar = () => {
 
             {/* BOTTOM ROW: always visible, shifts up with bounce when top row collapses */}
             <div className="flex items-center justify-between py-3">
-              {/* Logo */}
               <div className="flex-shrink-0">
                 <Logo imageSrc="/favicon.png" />
               </div>
 
-              {/* Navigation Links - Center */}
               <div className="flex-1 flex justify-center">
-                <NavLinks className="flex-row space-x-6" />
+                <DesktopNavLinks />
               </div>
 
-              {/* Right Actions */}
               <div className="flex items-center gap-3 flex-shrink-0">
                 <button
                   onClick={() => setIsSearchModalOpen(true)}
@@ -600,6 +833,12 @@ const Navbar = () => {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Mobile Left Drawer */}
+      <MobileDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+      />
 
       {/* Global Modals / Drawers */}
       <SearchModal
