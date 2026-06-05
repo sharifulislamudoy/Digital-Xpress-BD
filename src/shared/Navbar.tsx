@@ -18,6 +18,7 @@ import {
   FaHeart,
   FaChevronDown,
   FaChevronUp,
+  FaTachometerAlt,
 } from "react-icons/fa";
 import { Logo } from "@/components/navbar/Logo";
 import { CartIcon } from "@/components/navbar/CartIcon";
@@ -303,6 +304,30 @@ const UserDrawer = ({
     return "U";
   };
 
+  // Determine which dashboard links to show based on user role
+  const getDashboardLinks = () => {
+    const role = user?.role;
+    
+    if (role === "admin") {
+      return {
+        href: "/dashboard/admin",
+        label: "Admin Dashboard",
+        icon: <FaTachometerAlt className="text-orange-500" />,
+      };
+    } else if (role === "moderator") {
+      return {
+        href: "/dashboard/moderator",
+        label: "Moderator Dashboard",
+        icon: <FaTachometerAlt className="text-orange-500" />,
+      };
+    } else {
+      // customer or any other role - show orders and wishlist
+      return null;
+    }
+  };
+
+  const dashboardLink = getDashboardLinks();
+
   const LogoutConfirmModal = () => {
     if (!mounted) return null;
     return createPortal(
@@ -405,25 +430,47 @@ const UserDrawer = ({
                           {user?.name || "User"}
                         </p>
                         <p className="text-gray-400 text-sm">{user?.email}</p>
+                        {user?.role && (
+                          <p className="text-orange-400 text-xs capitalize mt-1">
+                            {user.role}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Link
-                        href="/orders"
-                        onClick={onClose}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition text-white"
-                      >
-                        <FaBox className="text-orange-500" />
-                        <span>My Orders</span>
-                      </Link>
-                      <Link
-                        href="/wishlist"
-                        onClick={onClose}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition text-white"
-                      >
-                        <FaHeart className="text-orange-500" />
-                        <span>Wishlist</span>
-                      </Link>
+                      {/* Role-based dashboard links */}
+                      {dashboardLink ? (
+                        <Link
+                          href={dashboardLink.href}
+                          onClick={onClose}
+                          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition text-white"
+                        >
+                          {dashboardLink.icon}
+                          <span>{dashboardLink.label}</span>
+                        </Link>
+                      ) : (
+                        // Customer links: Orders and Wishlist
+                        <>
+                          <Link
+                            href="/orders"
+                            onClick={onClose}
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition text-white"
+                          >
+                            <FaBox className="text-orange-500" />
+                            <span>My Orders</span>
+                          </Link>
+                          <Link
+                            href="/wishlist"
+                            onClick={onClose}
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition text-white"
+                          >
+                            <FaHeart className="text-orange-500" />
+                            <span>Wishlist</span>
+                          </Link>
+                        </>
+                      )}
+                      
+                      {/* Settings link - show for all logged-in users */}
                       <Link
                         href="/settings"
                         onClick={onClose}
