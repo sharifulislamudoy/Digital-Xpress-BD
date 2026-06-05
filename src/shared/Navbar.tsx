@@ -15,6 +15,7 @@ import {
   FaSignOutAlt,
   FaPhoneAlt,
   FaEnvelope,
+  FaHeart,
 } from "react-icons/fa";
 import { Logo } from "@/components/navbar/Logo";
 import { CartIcon } from "@/components/navbar/CartIcon";
@@ -87,7 +88,6 @@ const SearchModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle search logic here
     console.log("Searching for:", searchQuery);
     onClose();
   };
@@ -147,13 +147,11 @@ const UserDrawer = ({
   const drawerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Handle mounting for portal
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
-  // Close drawer on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen && !showLogoutConfirm) {
@@ -164,12 +162,11 @@ const UserDrawer = ({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, showLogoutConfirm, onClose]);
 
-  // Handle click outside drawer
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         isOpen &&
-        !showLogoutConfirm && // Don't close drawer if logout modal is open
+        !showLogoutConfirm &&
         drawerRef.current &&
         !drawerRef.current.contains(event.target as Node)
       ) {
@@ -189,10 +186,9 @@ const UserDrawer = ({
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    setShowLogoutConfirm(false); // Close the confirmation modal
-    onClose(); // Close the drawer
+    setShowLogoutConfirm(false);
+    onClose();
     await signOut({ callbackUrl: "/" });
-    // No need to call anything else as signOut will redirect
   };
 
   const getInitials = () => {
@@ -207,7 +203,6 @@ const UserDrawer = ({
     return "U";
   };
 
-  // Logout confirmation modal - rendered via portal to avoid event bubbling issues
   const LogoutConfirmModal = () => {
     if (!mounted) return null;
     return createPortal(
@@ -219,7 +214,6 @@ const UserDrawer = ({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] bg-black/70 flex items-center justify-center p-4"
             onClick={(e) => {
-              // Only close if clicking the backdrop, not the modal content
               if (e.target === e.currentTarget) {
                 setShowLogoutConfirm(false);
               }
@@ -265,7 +259,6 @@ const UserDrawer = ({
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop - only closes drawer if logout modal is NOT open */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -275,7 +268,6 @@ const UserDrawer = ({
                 if (!showLogoutConfirm) onClose();
               }}
             />
-            {/* Drawer */}
             <motion.div
               ref={drawerRef}
               initial={{ x: "100%" }}
@@ -284,7 +276,6 @@ const UserDrawer = ({
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-[#141414] shadow-2xl z-[160] flex flex-col"
             >
-              {/* Drawer Header */}
               <div className="p-5 border-b border-orange-500 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-white">Account</h2>
                 <button
@@ -294,11 +285,8 @@ const UserDrawer = ({
                   <FaTimes size={22} />
                 </button>
               </div>
-
-              {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto p-5">
                 {user ? (
-                  // Logged In User
                   <div>
                     <div className="flex items-center gap-4 mb-6">
                       <div className="w-16 h-16 rounded-full bg-orange-500/20 border-2 border-orange-500 flex items-center justify-center text-orange-500 text-2xl font-bold overflow-hidden">
@@ -329,6 +317,14 @@ const UserDrawer = ({
                         <span>My Orders</span>
                       </Link>
                       <Link
+                        href="/wishlist"
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition text-white"
+                      >
+                        <FaHeart className="text-orange-500" />
+                        <span>Wishlist</span>
+                      </Link>
+                      <Link
                         href="/settings"
                         onClick={onClose}
                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition text-white"
@@ -339,7 +335,6 @@ const UserDrawer = ({
                     </div>
                   </div>
                 ) : (
-                  // Not Logged In
                   <div className="text-center py-8">
                     <div className="w-20 h-20 mx-auto bg-gray-800 rounded-full flex items-center justify-center mb-4">
                       <FaUser size={36} className="text-gray-500" />
@@ -365,8 +360,6 @@ const UserDrawer = ({
                   </div>
                 )}
               </div>
-
-              {/* Drawer Footer - Logout button only if logged in */}
               {user && (
                 <div className="p-5 border-t border-gray-800">
                   <button
@@ -388,7 +381,7 @@ const UserDrawer = ({
 };
 
 // ============================================================================
-// Main Navbar Component
+// Main Navbar Component with scroll‑driven bounce
 // ============================================================================
 const Navbar = () => {
   const { data: session } = useSession();
@@ -397,6 +390,17 @@ const Navbar = () => {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  // ---- Scroll state for collapse effect ----
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -426,8 +430,14 @@ const Navbar = () => {
       >
         {/* ==================== MOBILE VIEW ==================== */}
         <div className="lg:hidden max-w-7xl mx-auto px-4">
-          {/* Top Row: Hamburger + Logo + Icons (Cart, User, Search) */}
-          <div className="flex items-center justify-between py-2">
+          {/* Mobile row with bounce on height change */}
+          <motion.div
+            layout
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className={`flex items-center justify-between transition-all duration-300 ${
+              isScrolled ? "py-1" : "py-2"
+            }`}
+          >
             <div className="flex items-center gap-2">
               <HamburgerButton
                 isOpen={mobileMenuOpen}
@@ -458,9 +468,9 @@ const Navbar = () => {
                 )}
               </button>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Mobile Dropdown Menu (NavLinks) */}
+          {/* Mobile Dropdown Menu */}
           <AnimatePresence>
             {mobileMenuOpen && (
               <motion.div
@@ -480,102 +490,114 @@ const Navbar = () => {
 
         {/* ==================== DESKTOP VIEW ==================== */}
         <div className="hidden lg:block max-w-7xl mx-auto px-4">
-          {/* TOP ROW: Phone & Email (Left) | Social Icons (Right) */}
-          <div className="flex items-center justify-between py-2 text-sm border-b border-gray-800">
-            <div className="flex items-center gap-6 text-gray-300">
-              <a
-                href="tel:+8801995322033"
-                className="flex items-center gap-2 hover:text-orange-500 transition"
-              >
-                <FaPhoneAlt size={12} />
-                <span>+8801995322033</span>
-              </a>
-              <a
-                href="mailto:info@digital-xpress.com"
-                className="flex items-center gap-2 hover:text-orange-500 transition"
-              >
-                <FaEnvelope size={12} />
-                <span>info@digital-xpress.com</span>
-              </a>
+          {/* Wrap both rows in a layout group for spring animation */}
+          <motion.div
+            layout
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            {/* TOP ROW: hides when scrolled */}
+            <div
+              className={`flex items-center justify-between text-sm border-b border-gray-800 transition-all duration-300 ease-in-out ${
+                isScrolled
+                  ? "max-h-0 opacity-0 py-0 border-b-0 overflow-hidden"
+                  : "max-h-12 opacity-100 py-2"
+              }`}
+            >
+              <div className="flex items-center gap-6 text-gray-300">
+                <a
+                  href="tel:+8801995322033"
+                  className="flex items-center gap-2 hover:text-orange-500 transition"
+                >
+                  <FaPhoneAlt size={12} />
+                  <span>+8801995322033</span>
+                </a>
+                <a
+                  href="mailto:info@digital-xpress.com"
+                  className="flex items-center gap-2 hover:text-orange-500 transition"
+                >
+                  <FaEnvelope size={12} />
+                  <span>info@digital-xpress.com</span>
+                </a>
+              </div>
+              <div className="flex items-center space-x-4">
+                <motion.a
+                  whileHover={{ scale: 1.1, color: "#f97316" }}
+                  href="https://www.facebook.com/digitalxpressbd1/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-orange-500"
+                >
+                  <FaFacebook className="w-4 h-4" />
+                </motion.a>
+                <motion.a
+                  whileHover={{ scale: 1.1, color: "#f97316" }}
+                  href="https://twitter.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-orange-500"
+                >
+                  <FaTwitter className="w-4 h-4" />
+                </motion.a>
+                <motion.a
+                  whileHover={{ scale: 1.1, color: "#f97316" }}
+                  href="https://wa.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-orange-500"
+                >
+                  <FaWhatsapp className="w-4 h-4" />
+                </motion.a>
+                <motion.a
+                  whileHover={{ scale: 1.1, color: "#f97316" }}
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-orange-500"
+                >
+                  <FaInstagram className="w-4 h-4" />
+                </motion.a>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <motion.a
-                whileHover={{ scale: 1.1, color: "#f97316" }}
-                href="https://www.facebook.com/digitalxpressbd1/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-orange-500"
-              >
-                <FaFacebook className="w-4 h-4" />
-              </motion.a>
-              <motion.a
-                whileHover={{ scale: 1.1, color: "#f97316" }}
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-orange-500"
-              >
-                <FaTwitter className="w-4 h-4" />
-              </motion.a>
-              <motion.a
-                whileHover={{ scale: 1.1, color: "#f97316" }}
-                href="https://wa.me"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-orange-500"
-              >
-                <FaWhatsapp className="w-4 h-4" />
-              </motion.a>
-              <motion.a
-                whileHover={{ scale: 1.1, color: "#f97316" }}
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-orange-500"
-              >
-                <FaInstagram className="w-4 h-4" />
-              </motion.a>
-            </div>
-          </div>
 
-          {/* BOTTOM ROW: Logo (Left) | NavLinks (Center) | Search + Cart + User (Right) */}
-          <div className="flex items-center justify-between py-3">
-            {/* Logo */}
-            <div className="flex-shrink-0">
-              <Logo imageSrc="/favicon.png" />
-            </div>
+            {/* BOTTOM ROW: always visible, shifts up with bounce when top row collapses */}
+            <div className="flex items-center justify-between py-3">
+              {/* Logo */}
+              <div className="flex-shrink-0">
+                <Logo imageSrc="/favicon.png" />
+              </div>
 
-            {/* Navigation Links - Center */}
-            <div className="flex-1 flex justify-center">
-              <NavLinks className="flex-row space-x-6" />
-            </div>
+              {/* Navigation Links - Center */}
+              <div className="flex-1 flex justify-center">
+                <NavLinks className="flex-row space-x-6" />
+              </div>
 
-            {/* Right Actions: Search Button, Cart, User Icon */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <button
-                onClick={() => setIsSearchModalOpen(true)}
-                className="p-2 rounded-full hover:bg-gray-800 transition text-white"
-                aria-label="Search"
-              >
-                <FaSearch size={20} />
-              </button>
-              <CartIcon itemCount={8} subtotal={999} />
-              <button
-                onClick={() => setIsDrawerOpen(true)}
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-orange-500 transition overflow-hidden"
-              >
-                {user?.image ? (
-                  <img
-                    src={user.image}
-                    alt="profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <FaUser size={18} />
-                )}
-              </button>
+              {/* Right Actions */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <button
+                  onClick={() => setIsSearchModalOpen(true)}
+                  className="p-2 rounded-full hover:bg-gray-800 transition text-white"
+                  aria-label="Search"
+                >
+                  <FaSearch size={20} />
+                </button>
+                <CartIcon itemCount={8} subtotal={999} />
+                <button
+                  onClick={() => setIsDrawerOpen(true)}
+                  className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-orange-500 transition overflow-hidden"
+                >
+                  {user?.image ? (
+                    <img
+                      src={user.image}
+                      alt="profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <FaUser size={18} />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
 
