@@ -35,6 +35,7 @@ export const authOptions: NextAuthOptions = {
             id: data.user.id,
             name: data.user.name,
             email: data.user.email,
+            role: data.user.role,          // include role
             accessToken: data.token,
           };
         } catch {
@@ -51,12 +52,12 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.accessToken = (user as any).accessToken;
+        token.role = (user as any).role;   // store role in JWT
       }
 
-      // Sync OAuth user (Google, Facebook, etc.) to backend without Account table
-      if (account && (account.provider === "google")) {
+      // Sync OAuth user (Google) to backend
+      if (account && account.provider === "google") {
         try {
-          // Wait for sync to ensure user exists in our DB
           const syncRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/oauth-sync`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -69,6 +70,7 @@ export const authOptions: NextAuthOptions = {
           const syncData = await syncRes.json();
           if (syncData.success && syncData.user) {
             token.id = syncData.user.id;
+            token.role = syncData.user.role;   // get role from backend
           }
         } catch (e) {
           console.error("OAuth sync failed", e);
@@ -81,6 +83,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).accessToken = token.accessToken;
+        (session.user as any).role = token.role;   // expose role in session
       }
       return session;
     },

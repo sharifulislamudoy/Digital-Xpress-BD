@@ -1,7 +1,3 @@
-// ============================================================================
-// Navbar.tsx - Complete Updated Component
-// ============================================================================
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -133,6 +129,104 @@ const SearchModal = ({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+};
+
+// ============================================================================
+// User Icon Button with Animated Login Tooltip (Shakes periodically)
+// ============================================================================
+const UserButtonWithTooltip = ({
+  user,
+  onClick,
+  className = "",
+}: {
+  user: any;
+  onClick: () => void;
+  className?: string;
+}) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [shake, setShake] = useState(false);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shakeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Show tooltip when user is not logged in, with a slight delay
+  useEffect(() => {
+    if (!user) {
+      tooltipTimeoutRef.current = setTimeout(() => {
+        setShowTooltip(true);
+      }, 1000);
+    } else {
+      setShowTooltip(false);
+    }
+
+    return () => {
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+    };
+  }, [user]);
+
+  // Periodic shake effect every 3 seconds while tooltip is visible
+  useEffect(() => {
+    if (showTooltip) {
+      shakeIntervalRef.current = setInterval(() => {
+        setShake(true);
+        setTimeout(() => setShake(false), 300);
+      }, 3000);
+    } else {
+      if (shakeIntervalRef.current) clearInterval(shakeIntervalRef.current);
+    }
+
+    return () => {
+      if (shakeIntervalRef.current) clearInterval(shakeIntervalRef.current);
+    };
+  }, [showTooltip]);
+
+  const getInitials = () => {
+    if (user?.name) {
+      return user.name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return "U";
+  };
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={onClick}
+        className={`${className} w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-orange-500 transition overflow-hidden`}
+        aria-label="User account"
+      >
+        {user?.image ? (
+          <img
+            src={user.image}
+            alt="profile"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <FaUser size={18} />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {showTooltip && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0, ...(shake ? { x: [-2, 2, -2, 2, 0] } : {}) }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ duration: 0.2, x: { duration: 0.2 } }}
+            className="absolute right-0 top-full mt-2 z-50"
+          >
+            <div className="relative bg-orange-500 text-white text-sm font-medium py-1.5 px-3 rounded-md shadow-lg whitespace-nowrap">
+              <div className="absolute -top-1 right-3 w-2 h-2 rotate-45 bg-orange-500"></div>
+              Login
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -675,6 +769,10 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // For mobile, we need a smaller icon size, so we pass a custom className
+  const mobileUserButtonClass = "w-8 h-8";
+  const desktopUserButtonClass = "w-10 h-10";
+
   return (
     <>
       <motion.div
@@ -707,20 +805,11 @@ const Navbar = () => {
                 <FaSearch size={18} />
               </button>
               <CartIcon itemCount={8} subtotal={999} />
-              <button
+              <UserButtonWithTooltip
+                user={user}
                 onClick={() => setIsDrawerOpen(true)}
-                className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-orange-500 transition overflow-hidden"
-              >
-                {user?.image ? (
-                  <img
-                    src={user.image}
-                    alt="profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <FaUser size={14} />
-                )}
-              </button>
+                className={mobileUserButtonClass}
+              />
             </div>
           </motion.div>
         </div>
@@ -814,20 +903,11 @@ const Navbar = () => {
                   <FaSearch size={20} />
                 </button>
                 <CartIcon itemCount={8} subtotal={999} />
-                <button
+                <UserButtonWithTooltip
+                  user={user}
                   onClick={() => setIsDrawerOpen(true)}
-                  className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-orange-500 transition overflow-hidden"
-                >
-                  {user?.image ? (
-                    <img
-                      src={user.image}
-                      alt="profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <FaUser size={18} />
-                  )}
-                </button>
+                  className={desktopUserButtonClass}
+                />
               </div>
             </div>
           </motion.div>
