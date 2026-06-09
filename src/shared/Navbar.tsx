@@ -310,13 +310,13 @@ const UserDrawer = ({
     
     if (role === "admin") {
       return {
-        href: "/dashboard/admin",
+        href: "/admin",
         label: "Admin Dashboard",
         icon: <FaTachometerAlt className="text-orange-500" />,
       };
     } else if (role === "moderator") {
       return {
-        href: "/dashboard/moderator",
+        href: "/moderator",
         label: "Moderator Dashboard",
         icon: <FaTachometerAlt className="text-orange-500" />,
       };

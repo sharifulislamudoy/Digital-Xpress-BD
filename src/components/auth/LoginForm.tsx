@@ -2,18 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // 👈 useSearchParams
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import {
-  FaGoogle,
-  FaArrowLeft,
-  FaEye,
-  FaEyeSlash,
-} from "react-icons/fa";
+import { FaGoogle, FaArrowLeft, FaEye, FaEyeSlash } from "react-icons/fa";
+import BannedErrorModal from "../users/BannedErrorModal";
 
 const schema = z.object({
   identifier: z.string().min(1, "Email or phone is required"),
@@ -24,14 +20,12 @@ type FormValues = z.infer<typeof schema>;
 
 const AnimatedBackground = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) =>
       setMousePosition({ x: e.clientX, y: e.clientY });
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
-
   return (
     <div className="fixed inset-0 overflow-hidden -z-10">
       <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
@@ -63,15 +57,32 @@ const AnimatedBackground = () => {
 
 export const LoginForm = () => {
   const router = useRouter();
+  const searchParams = useSearchParams(); // 👈 read query params
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [bannedModal, setBannedModal] = useState<{ open: boolean; identifier: string; contactEmail: string; contactPhone: string }>({
+    open: false,
+    identifier: "",
+    contactEmail: "",
+    contactPhone: "",
+  });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+
+  // 👇 Show banned modal if redirected from Google OAuth with error=banned
+  useEffect(() => {
+    const error = searchParams.get("error");
+    const email = searchParams.get("email");
+    if (error === "banned" && email) {
+      setBannedModal({
+        open: true,
+        identifier: email,
+        contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "info@digital-xpress-bd.com",
+        contactPhone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "+8801995322033",
+      });
+    }
+  }, [searchParams]);
 
   const onLogin = async (data: FormValues) => {
     setIsLoading(true);
@@ -84,6 +95,21 @@ export const LoginForm = () => {
       });
 
       if (result?.error) {
+        try {
+          const parsed = JSON.parse(result.error);
+          if (parsed.message === "BANNED_ACCOUNT") {
+            setBannedModal({
+              open: true,
+              identifier: parsed.bannedIdentifier,
+              contactEmail: parsed.contactEmail,
+              contactPhone: parsed.contactPhone,
+            });
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          // fallback
+        }
         setServerError("Invalid credentials");
       } else if (result?.ok) {
         router.push("/");
@@ -99,19 +125,16 @@ export const LoginForm = () => {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     await signIn("google", { callbackUrl: "/" });
+    setIsLoading(false);
   };
 
   return (
     <>
       <AnimatedBackground />
       <div className="relative min-h-screen flex items-center justify-center px-4 py-12">
-        <Link
-          href="/"
-          className="fixed top-6 left-4 z-50 bg-gray-800/80 backdrop-blur-sm p-2 rounded-full hover:bg-gray-700 transition-all duration-300 group"
-        >
+        <Link href="/" className="fixed top-6 left-4 z-50 bg-gray-800/80 backdrop-blur-sm p-2 rounded-full hover:bg-gray-700 transition-all duration-300 group">
           <FaArrowLeft className="text-white text-xl group-hover:-translate-x-1 transition-transform" />
         </Link>
-
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -119,134 +142,58 @@ export const LoginForm = () => {
           className="w-full max-w-md bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden"
         >
           <div className="px-6 pt-8 pb-6 text-center">
-            <motion.h1
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent"
-            >
+            <motion.h1 initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
               Welcome Back
             </motion.h1>
-            <p className="text-gray-300 mt-2 text-sm">
-              Sign in to your Digital Xpress account
-            </p>
+            <p className="text-gray-300 mt-2 text-sm">Sign in to your Digital Xpress account</p>
           </div>
-
           <div className="px-6 pb-6">
-            <motion.form
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              onSubmit={handleSubmit(onLogin)}
-              className="space-y-5"
-            >
+            <motion.form initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSubmit(onLogin)} className="space-y-5">
               <div>
-                <label className="block text-gray-200 text-sm font-medium mb-2">
-                  Email or Phone Number
-                </label>
-                <input
-                  type="text"
-                  {...register("identifier")}
-                  className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-                  placeholder="you@example.com or +1234567890"
-                  disabled={isLoading}
-                />
-                {errors.identifier && (
-                  <p className="text-red-400 text-xs mt-1">{errors.identifier.message}</p>
-                )}
+                <label className="block text-gray-200 text-sm font-medium mb-2">Email or Phone Number</label>
+                <input type="text" {...register("identifier")} className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all" placeholder="you@example.com or +1234567890" disabled={isLoading} />
+                {errors.identifier && <p className="text-red-400 text-xs mt-1">{errors.identifier.message}</p>}
               </div>
-
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-gray-200 text-sm font-medium">
-                    Password
-                  </label>
-                  <Link
-                    href="/forgot-password"
-                    className="text-xs text-orange-500 hover:text-orange-400 transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
+                  <label className="block text-gray-200 text-sm font-medium">Password</label>
+                  <Link href="/forgot-password" className="text-xs text-orange-500 hover:text-orange-400 transition-colors">Forgot password?</Link>
                 </div>
                 <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    {...register("password")}
-                    className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="••••••••"
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
+                  <input type={showPassword ? "text" : "password"} {...register("password")} className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="••••••••" disabled={isLoading} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>
-                )}
+                {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
               </div>
-
-              {serverError && (
-                <p className="text-red-400 text-sm bg-red-500/10 p-2 rounded-lg text-center">
-                  {serverError}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-70"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Signing in...</span>
-                  </div>
-                ) : (
-                  "Sign In"
-                )}
+              {serverError && <p className="text-red-400 text-sm bg-red-500/10 p-2 rounded-lg text-center">{serverError}</p>}
+              <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-70">
+                {isLoading ? <div className="flex items-center justify-center gap-2"><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Signing in...</span></div> : "Sign In"}
               </button>
             </motion.form>
-
             <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-700/50" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-gray-900/80 px-3 py-1 text-gray-300 rounded-full backdrop-blur-sm">
-                  OR SIGN IN WITH
-                </span>
-              </div>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700/50" /></div>
+              <div className="relative flex justify-center text-xs"><span className="bg-gray-900/80 px-3 py-1 text-gray-300 rounded-full backdrop-blur-sm">OR SIGN IN WITH</span></div>
             </div>
-
             <div className="space-y-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 bg-gray-800/50 border border-gray-700 hover:bg-gray-700/70 text-white font-medium py-3 rounded-xl transition-all"
-              >
-                <FaGoogle className="text-red-400 text-xl" />
-                <span>Continue with Google</span>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleGoogleSignIn} disabled={isLoading} className="w-full flex items-center justify-center gap-3 bg-gray-800/50 border border-gray-700 hover:bg-gray-700/70 text-white font-medium py-3 rounded-xl transition-all">
+                <FaGoogle className="text-red-400 text-xl" /><span>Continue with Google</span>
               </motion.button>
             </div>
-
             <div className="mt-8 text-center">
-              <p className="text-gray-300 text-sm">
-                Don't have an account?{" "}
-                <Link
-                  href="/register"
-                  className="text-orange-500 font-semibold hover:text-orange-400 transition-colors"
-                >
-                  Sign up
-                </Link>
-              </p>
+              <p className="text-gray-300 text-sm">Don't have an account? <Link href="/register" className="text-orange-500 font-semibold hover:text-orange-400 transition-colors">Sign up</Link></p>
             </div>
           </div>
         </motion.div>
       </div>
+      <BannedErrorModal
+        isOpen={bannedModal.open}
+        onClose={() => setBannedModal({ open: false, identifier: "", contactEmail: "", contactPhone: "" })}
+        identifier={bannedModal.identifier}
+        contactEmail={bannedModal.contactEmail}
+        contactPhone={bannedModal.contactPhone}
+      />
     </>
   );
 };
