@@ -1,8 +1,8 @@
 "use client";
 
 import EntryLoader from "@/components/loading-spinner/EntryLoader";
+import ToastProvider from "@/components/Toast";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
-import { Toaster } from "react-hot-toast";
 import { useEffect } from "react";
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       >
         <SessionGuard>
           {children}
-          <Toaster position="top-right" />
+          <ToastProvider />
         </SessionGuard>
       </SessionProvider>
     </EntryLoader>
