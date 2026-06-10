@@ -1,7 +1,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "i.ibb.co",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "ibb.co",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

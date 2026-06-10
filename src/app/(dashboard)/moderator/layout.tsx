@@ -13,6 +13,8 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTachometerAlt,
+  FaImages,
+  FaUsers,
 } from "react-icons/fa";
 import { signOut } from "next-auth/react";
 
@@ -40,6 +42,8 @@ const SidebarContent = ({
     { name: "Dashboard", href: "/moderator", icon: FaTachometerAlt },
     { name: "Orders", href: "/moderator/orders", icon: FaShoppingCart },
     { name: "Products", href: "/moderator/products", icon: FaBox },
+    { name: "Users", href: "/moderator/users", icon: FaUsers },
+    { name: "Banners", href: "/moderator/banners", icon: FaImages },
   ];
 
   const handleLinkClick = () => {

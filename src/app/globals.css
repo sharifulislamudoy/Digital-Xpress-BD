@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -23,4 +24,80 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.hero-overlap-swiper {
+  width: 100%;
+  overflow: hidden;
+}
+
+.hero-overlap-swiper .swiper-wrapper {
+  align-items: stretch;
+  transition-timing-function: cubic-bezier(0.76, 0, 0.24, 1) !important;
+}
+
+.hero-overlap-swiper .swiper-slide {
+  width: 100% !important;
+  height: auto;
+  opacity: 1 !important;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+.hero-overlap-swiper .swiper-slide-active,
+.hero-overlap-swiper .swiper-slide-prev,
+.hero-overlap-swiper .swiper-slide-next {
+  opacity: 1 !important;
+}
+
+.hero-overlap-swiper .swiper-pagination {
+  left: auto !important;
+  right: 24px !important;
+  bottom: 18px !important;
+  width: auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.hero-overlap-swiper .swiper-pagination-bullet {
+  margin: 0 !important;
+  width: 9px;
+  height: 9px;
+  background: white;
+  opacity: 0.65;
+}
+
+.hero-overlap-swiper .swiper-pagination-bullet-active {
+  width: 28px;
+  border-radius: 999px;
+  background: #f97316;
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .hero-overlap-swiper .swiper-wrapper {
+    transition-timing-function: ease-in-out !important;
+  }
+
+  .hero-overlap-swiper .swiper-pagination {
+    right: 14px !important;
+    bottom: 12px !important;
+  }
+
+  .hero-overlap-swiper .swiper-pagination-bullet {
+    width: 7px;
+    height: 7px;
+  }
+
+  .hero-overlap-swiper .swiper-pagination-bullet-active {
+    width: 22px;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
