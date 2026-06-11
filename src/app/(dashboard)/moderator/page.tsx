@@ -71,7 +71,7 @@ export default function ModeratorDashboardPage() {
         {stats.map((stat, idx) => (
           <div
             key={idx}
-            className="bg-[#141414] rounded-xl p-5 border border-gray-800 hover:border-orange-500/50 transition"
+            className="bg-black rounded-xl p-5 border border-gray-800 hover:border-orange-500/50 transition"
           >
             <div className="flex items-center justify-between mb-3">
               <div className={`${stat.color} p-3 rounded-lg`}>
@@ -86,7 +86,7 @@ export default function ModeratorDashboardPage() {
       </div>
 
       {/* Recent Orders Table (Moderator can view orders) */}
-      <div className="bg-[#141414] rounded-xl border border-gray-800 overflow-hidden">
+      <div className="bg-black rounded-xl border border-gray-800 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-white">Recent Orders</h2>
           <Link

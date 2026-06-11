@@ -1,4 +1,3 @@
-// src/types/product.ts
 export interface Product {
   id: number;
   name: string;
@@ -9,6 +8,7 @@ export interface Product {
   reviews: number;
   category: string;
   image: string;
+  hoverImage?: string;
   popularity: number;
   date: string;
   discount?: number;

@@ -1,84 +1,95 @@
-// src/app/products/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PRODUCTS, priceRanges } from "@/lib/products";
-import { Product, Category } from "@/types/product";
+import { Category, Product } from "@/types/product";
 import CollapsibleSection from "@/components/products/CollapsibleSection";
+import ProductCard from "@/components/products/ProductCard";
+import ProductCardSkeleton from "@/components/products/ProductCardSkeleton";
+
+const productsPerPage = 9;
 
 const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [products] = useState<Product[]>(PRODUCTS);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(PRODUCTS);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<string[]>([]);
-  const [allFeatures, setAllFeatures] = useState<string[]>([]);
 
-  // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedPriceRange, setSelectedPriceRange] = useState<typeof priceRanges[0] | null>(null);
+  const [selectedPriceRange, setSelectedPriceRange] = useState<
+    (typeof priceRanges)[number] | null
+  >(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState("popularity");
   const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const productsPerPage = 9;
-
   useEffect(() => {
-    const uniqueCategories = Array.from(new Set(products.map((p) => p.category))).map((cat) => ({
-      slug: cat,
-      name: cat.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" "),
-    }));
-    const uniqueBrands = Array.from(new Set(products.map((p) => p.brand)));
-    const uniqueFeatures = Array.from(new Set(products.flatMap((p) => p.features)));
+    const timer = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
-    setCategories(uniqueCategories);
-    setBrands(uniqueBrands);
-    setAllFeatures(uniqueFeatures);
-    setTimeout(() => setLoading(false), 600);
+  const categories = useMemo<Category[]>(() => {
+    return Array.from(new Set(products.map((product) => product.category))).map(
+      (category) => ({
+        slug: category,
+        name: category
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+      })
+    );
   }, [products]);
 
-  // Apply filters and sorting whenever any filter changes
-  useEffect(() => {
+  const brands = useMemo(() => {
+    return Array.from(new Set(products.map((product) => product.brand)));
+  }, [products]);
+
+  const allFeatures = useMemo(() => {
+    return Array.from(new Set(products.flatMap((product) => product.features)));
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
     let filtered = [...products];
 
-    // Category filter
     if (selectedCategory) {
-      filtered = filtered.filter((product) => product.category === selectedCategory);
-    }
-
-    // Brand filter
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter((product) => selectedBrands.includes(product.brand));
-    }
-
-    // Price range filter
-    if (selectedPriceRange) {
       filtered = filtered.filter(
-        (product) => product.price >= selectedPriceRange.min && product.price <= selectedPriceRange.max
+        (product) => product.category === selectedCategory
       );
     }
 
-    // Rating filter
-    if (selectedRating) {
-      filtered = filtered.filter((product) => Math.floor(product.rating) === selectedRating);
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter((product) =>
+        selectedBrands.includes(product.brand)
+      );
     }
 
-    // Features filter
+    if (selectedPriceRange) {
+      filtered = filtered.filter(
+        (product) =>
+          product.price >= selectedPriceRange.min &&
+          product.price <= selectedPriceRange.max
+      );
+    }
+
+    if (selectedRating) {
+      filtered = filtered.filter(
+        (product) => Math.floor(product.rating) >= selectedRating
+      );
+    }
+
     if (selectedFeatures.length > 0) {
       filtered = filtered.filter((product) =>
         selectedFeatures.every((feature) => product.features.includes(feature))
       );
     }
 
-    // Sorting
     switch (sortOption) {
       case "newest":
-        filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        filtered.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
         break;
       case "price-low":
         filtered.sort((a, b) => a.price - b.price);
@@ -91,31 +102,58 @@ const ProductsPage = () => {
         break;
     }
 
-    setFilteredProducts(filtered);
+    return filtered;
+  }, [
+    products,
+    selectedCategory,
+    selectedBrands,
+    selectedPriceRange,
+    selectedRating,
+    selectedFeatures,
+    sortOption,
+  ]);
+
+  useEffect(() => {
     setCurrentPage(1);
-  }, [products, selectedCategory, selectedBrands, selectedPriceRange, selectedRating, selectedFeatures, sortOption]);
+  }, [
+    selectedCategory,
+    selectedBrands,
+    selectedPriceRange,
+    selectedRating,
+    selectedFeatures,
+    sortOption,
+  ]);
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const currentProducts = filteredProducts.slice(
+    (currentPage - 1) * productsPerPage,
+    currentPage * productsPerPage
+  );
 
-  const paginate = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const getSelectedCategoryName = () => {
+    if (!selectedCategory) return null;
+    return (
+      categories.find((category) => category.slug === selectedCategory)?.name ||
+      selectedCategory
+    );
   };
 
-  const handleCategoryClick = (categorySlug: string) => {
+  const handleCategoryClick = (categorySlug: string | null) => {
     setSelectedCategory((prev) => (prev === categorySlug ? null : categorySlug));
-    setCurrentPage(1);
   };
 
   const handleBrandChange = (brand: string) => {
-    setSelectedBrands((prev) => (prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]));
+    setSelectedBrands((prev) =>
+      prev.includes(brand)
+        ? prev.filter((item) => item !== brand)
+        : [...prev, brand]
+    );
   };
 
-  const handlePriceRangeChange = (range: typeof priceRanges[0]) => {
-    setSelectedPriceRange((prev) => (prev === range ? null : range));
+  const handlePriceRangeChange = (range: (typeof priceRanges)[number]) => {
+    setSelectedPriceRange((prev) =>
+      prev?.min === range.min && prev?.max === range.max ? null : range
+    );
   };
 
   const handleRatingChange = (rating: number) => {
@@ -124,7 +162,9 @@ const ProductsPage = () => {
 
   const handleFeatureChange = (feature: string) => {
     setSelectedFeatures((prev) =>
-      prev.includes(feature) ? prev.filter((f) => f !== feature) : [...prev, feature]
+      prev.includes(feature)
+        ? prev.filter((item) => item !== feature)
+        : [...prev, feature]
     );
   };
 
@@ -136,316 +176,247 @@ const ProductsPage = () => {
     setSelectedFeatures([]);
   };
 
-  const getSelectedCategoryName = () => {
-    if (!selectedCategory) return null;
-    const cat = categories.find((c) => c.slug === selectedCategory);
-    return cat ? cat.name : selectedCategory;
+  const paginate = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-black">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-white mt-4 text-lg">Loading products...</p>
+  const handleAddToCart = (product: Product) => {
+    console.log("Add to cart:", product);
+  };
+
+  const handleToggleFavorite = (product: Product) => {
+    console.log("Favourite:", product);
+  };
+
+  const filterContent = (
+    <>
+      <CollapsibleSection title="Categories" defaultOpen>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => handleCategoryClick(null)}
+            className={`block w-full rounded-lg px-3 py-2 text-left transition ${
+              !selectedCategory
+                ? "bg-orange-500/20 text-orange-400"
+                : "hover:bg-gray-900 hover:text-orange-400"
+            }`}
+          >
+            All Categories
+          </button>
+
+          {categories.map((category) => (
+            <button
+              type="button"
+              key={category.slug}
+              onClick={() => handleCategoryClick(category.slug)}
+              className={`block w-full rounded-lg px-3 py-2 text-left transition ${
+                selectedCategory === category.slug
+                  ? "bg-orange-500/20 text-orange-400"
+                  : "hover:bg-gray-900 hover:text-orange-400"
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
         </div>
-      </div>
-    );
-  }
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Brands">
+        <div className="space-y-2">
+          {brands.map((brand) => (
+            <label
+              key={brand}
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-900"
+            >
+              <input
+                type="checkbox"
+                checked={selectedBrands.includes(brand)}
+                onChange={() => handleBrandChange(brand)}
+                className="h-4 w-4 accent-orange-500"
+              />
+              <span>{brand}</span>
+            </label>
+          ))}
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Price Range">
+        <div className="space-y-2">
+          {priceRanges.map((range) => (
+            <label
+              key={range.label}
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-900"
+            >
+              <input
+                type="radio"
+                name="priceRange"
+                checked={
+                  selectedPriceRange?.min === range.min &&
+                  selectedPriceRange?.max === range.max
+                }
+                onChange={() => handlePriceRangeChange(range)}
+                className="h-4 w-4 accent-orange-500"
+              />
+              <span>{range.label}</span>
+            </label>
+          ))}
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Rating">
+        <div className="space-y-2">
+          {[5, 4, 3, 2, 1].map((rating) => (
+            <label
+              key={rating}
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-900"
+            >
+              <input
+                type="radio"
+                name="rating"
+                checked={selectedRating === rating}
+                onChange={() => handleRatingChange(rating)}
+                className="h-4 w-4 accent-orange-500"
+              />
+
+              <span className="flex items-center">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <span
+                    key={index}
+                    className={
+                      index < rating ? "text-orange-400" : "text-gray-600"
+                    }
+                  >
+                    ★
+                  </span>
+                ))}
+                <span className="ml-1 text-gray-400">& Up</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </CollapsibleSection>
+
+      {allFeatures.length > 0 && (
+        <CollapsibleSection title="Features">
+          <div className="space-y-2">
+            {allFeatures.map((feature) => (
+              <label
+                key={feature}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-900"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedFeatures.includes(feature)}
+                  onChange={() => handleFeatureChange(feature)}
+                  className="h-4 w-4 accent-orange-500"
+                />
+                <span>{feature}</span>
+              </label>
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      <button
+        type="button"
+        onClick={clearAllFilters}
+        className="w-full rounded-xl border border-orange-500 px-4 py-3 text-sm font-semibold text-orange-500 transition hover:bg-orange-500/10"
+      >
+        Clear All Filters
+      </button>
+    </>
+  );
 
   return (
-    <div className="bg-black text-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Mobile Filter Button */}
-        <div className="md:hidden flex justify-between items-center mb-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-          <h1 className="text-xl font-bold text-orange-400">
-            {getSelectedCategoryName() ? `${getSelectedCategoryName()}` : "All Products"}
-          </h1>
+    <div className="min-h-screen bg-black text-white">
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-gray-800 bg-gray-950 p-4 md:hidden">
+          <div>
+            <h1 className="text-xl font-bold text-orange-400">
+              {getSelectedCategoryName() || "All Products"}
+            </h1>
+            <p className="text-sm text-gray-400">
+              {filteredProducts.length} products found
+            </p>
+          </div>
+
           <button
+            type="button"
             onClick={() => setShowMobileFilters(true)}
-            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
+            className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
           >
             Filters
           </button>
         </div>
 
-        {/* Mobile Filters Drawer */}
         <AnimatePresence>
           {showMobileFilters && (
             <motion.div
-              initial={{ opacity: 0, x: "100%" }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: "100%" }}
-              className="fixed inset-0 z-50 bg-black/95 overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm md:hidden"
             >
-              <div className="bg-gray-900 min-h-screen p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-orange-400">Filters</h2>
-                  <button onClick={() => setShowMobileFilters(false)} className="text-white text-2xl">
-                    ✕
-                  </button>
-                </div>
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
+                className="ml-auto h-full w-[86%] max-w-sm overflow-y-auto bg-black p-5"
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-orange-400">
+                    Filters
+                  </h2>
 
-                <div className="space-y-4">
-                  {/* Categories - OPEN by default */}
-                  <CollapsibleSection title="Categories" defaultOpen={true}>
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => handleCategoryClick("")}
-                        className={`block w-full text-left px-2 py-1 rounded transition ${
-                          !selectedCategory ? "bg-orange-500/20 text-orange-400" : "hover:text-orange-400"
-                        }`}
-                      >
-                        All Categories
-                      </button>
-                      {categories.map((category) => (
-                        <button
-                          key={category.slug}
-                          onClick={() => handleCategoryClick(category.slug)}
-                          className={`block w-full text-left px-2 py-1 rounded transition ${
-                            selectedCategory === category.slug ? "bg-orange-500/20 text-orange-400" : "hover:text-orange-400"
-                          }`}
-                        >
-                          {category.name}
-                        </button>
-                      ))}
-                    </div>
-                  </CollapsibleSection>
-
-                  {/* Brands - CLOSED by default */}
-                  <CollapsibleSection title="Brands" defaultOpen={false}>
-                    <div className="space-y-2">
-                      {brands.map((brand) => (
-                        <label key={brand} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedBrands.includes(brand)}
-                            onChange={() => handleBrandChange(brand)}
-                            className="w-4 h-4 accent-orange-500"
-                          />
-                          <span>{brand}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </CollapsibleSection>
-
-                  {/* Price Range - CLOSED by default */}
-                  <CollapsibleSection title="Price Range" defaultOpen={false}>
-                    <div className="space-y-2">
-                      {priceRanges.map((range, idx) => (
-                        <label key={idx} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="priceRange"
-                            checked={selectedPriceRange?.min === range.min}
-                            onChange={() => handlePriceRangeChange(range)}
-                            className="w-4 h-4 accent-orange-500"
-                          />
-                          <span>{range.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </CollapsibleSection>
-
-                  {/* Ratings - CLOSED by default */}
-                  <CollapsibleSection title="Rating" defaultOpen={false}>
-                    <div className="space-y-2">
-                      {[5, 4, 3, 2, 1].map((rating) => (
-                        <label key={rating} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="rating"
-                            checked={selectedRating === rating}
-                            onChange={() => handleRatingChange(rating)}
-                            className="w-4 h-4 accent-orange-500"
-                          />
-                          <div className="flex">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <span key={i} className={i < rating ? "text-orange-400" : "text-gray-600"}>
-                                ★
-                              </span>
-                            ))}
-                            <span className="ml-1 text-gray-400">& Up</span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </CollapsibleSection>
-
-                  {/* Features - CLOSED by default */}
-                  {allFeatures.length > 0 && (
-                    <CollapsibleSection title="Features" defaultOpen={false}>
-                      <div className="space-y-2">
-                        {allFeatures.map((feature) => (
-                          <label key={feature} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedFeatures.includes(feature)}
-                              onChange={() => handleFeatureChange(feature)}
-                              className="w-4 h-4 accent-orange-500"
-                            />
-                            <span>{feature}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </CollapsibleSection>
-                  )}
-                </div>
-
-                <div className="mt-6 space-y-3">
                   <button
+                    type="button"
                     onClick={() => setShowMobileFilters(false)}
-                    className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition"
+                    className="grid h-10 w-10 place-items-center rounded-full bg-gray-900 text-xl"
                   >
-                    Apply Filters
-                  </button>
-                  <button
-                    onClick={clearAllFilters}
-                    className="w-full border border-orange-500 text-orange-500 py-3 rounded-lg hover:bg-orange-500/10 transition"
-                  >
-                    Clear All
+                    ×
                   </button>
                 </div>
-              </div>
+
+                <div className="space-y-4">{filterContent}</div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="mt-5 w-full rounded-xl bg-orange-500 px-4 py-3 font-semibold text-white"
+                >
+                  Apply Filters
+                </button>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Desktop Layout */}
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Desktop Filters Sidebar */}
-          <div className="hidden md:block w-72 flex-shrink-0">
-            <div className="sticky top-24 space-y-4">
-              {/* Categories - OPEN by default */}
-              <CollapsibleSection title="Categories" defaultOpen={true}>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleCategoryClick("")}
-                    className={`block w-full text-left px-2 py-1 rounded transition ${
-                      !selectedCategory ? "bg-orange-500/20 text-orange-400" : "hover:text-orange-400"
-                    }`}
-                  >
-                    All Categories
-                  </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category.slug}
-                      onClick={() => handleCategoryClick(category.slug)}
-                      className={`block w-full text-left px-2 py-1 rounded transition ${
-                        selectedCategory === category.slug ? "bg-orange-500/20 text-orange-400" : "hover:text-orange-400"
-                      }`}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
-              </CollapsibleSection>
+        <div className="flex flex-col gap-6 md:flex-row">
+          <aside className="hidden w-72 shrink-0 md:block">
+            <div className="sticky top-24 space-y-4">{filterContent}</div>
+          </aside>
 
-              {/* Brands - CLOSED by default */}
-              <CollapsibleSection title="Brands" defaultOpen={false}>
-                <div className="space-y-2">
-                  {brands.map((brand) => (
-                    <label key={brand} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedBrands.includes(brand)}
-                        onChange={() => handleBrandChange(brand)}
-                        className="w-4 h-4 accent-orange-500"
-                      />
-                      <span>{brand}</span>
-                    </label>
-                  ))}
-                </div>
-              </CollapsibleSection>
-
-              {/* Price Range - CLOSED by default */}
-              <CollapsibleSection title="Price Range" defaultOpen={false}>
-                <div className="space-y-2">
-                  {priceRanges.map((range, idx) => (
-                    <label key={idx} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="desktop-price"
-                        checked={selectedPriceRange?.min === range.min}
-                        onChange={() => handlePriceRangeChange(range)}
-                        className="w-4 h-4 accent-orange-500"
-                      />
-                      <span>{range.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </CollapsibleSection>
-
-              {/* Ratings - CLOSED by default */}
-              <CollapsibleSection title="Rating" defaultOpen={false}>
-                <div className="space-y-2">
-                  {[5, 4, 3, 2, 1].map((rating) => (
-                    <label key={rating} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="desktop-rating"
-                        checked={selectedRating === rating}
-                        onChange={() => handleRatingChange(rating)}
-                        className="w-4 h-4 accent-orange-500"
-                      />
-                      <div className="flex">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i} className={i < rating ? "text-orange-400" : "text-gray-600"}>
-                            ★
-                          </span>
-                        ))}
-                        <span className="ml-1 text-gray-400">& Up</span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </CollapsibleSection>
-
-              {/* Features - CLOSED by default */}
-              {allFeatures.length > 0 && (
-                <CollapsibleSection title="Features" defaultOpen={false}>
-                  <div className="space-y-2">
-                    {allFeatures.map((feature) => (
-                      <label key={feature} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedFeatures.includes(feature)}
-                          onChange={() => handleFeatureChange(feature)}
-                          className="w-4 h-4 accent-orange-500"
-                        />
-                        <span>{feature}</span>
-                      </label>
-                    ))}
-                  </div>
-                </CollapsibleSection>
-              )}
-
-              <button
-                onClick={clearAllFilters}
-                className="w-full border border-orange-500 text-orange-500 py-2 rounded-lg hover:bg-orange-500/10 transition"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Products Grid */}
-          <div className="flex-1">
-            {/* Header and Sorting */}
-            <div className="p-6 rounded-xl border border-gray-700 mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <main className="flex-1">
+            <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-950 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h1 className="text-2xl font-bold text-orange-400">
-                    {getSelectedCategoryName() ? `${getSelectedCategoryName()}` : "All Products"}
+                    {getSelectedCategoryName() || "All Products"}
                   </h1>
-                  <p className="text-gray-400 text-sm">Showing {filteredProducts.length} products</p>
+                  <p className="text-sm text-gray-400">
+                    Showing {filteredProducts.length} products
+                  </p>
                 </div>
+
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">Sort by:</span>
+                  <span className="text-sm text-gray-400">Sort by:</span>
+
                   <select
                     value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
+                    onChange={(event) => setSortOption(event.target.value)}
+                    className="rounded-xl border border-gray-700 bg-black px-3 py-2 text-sm text-white outline-none transition focus:border-orange-500"
                   >
                     <option value="popularity">Popularity</option>
                     <option value="newest">Newest</option>
@@ -455,139 +426,156 @@ const ProductsPage = () => {
                 </div>
               </div>
 
-              {/* Active Filters */}
-              {(selectedCategory || selectedBrands.length > 0 || selectedPriceRange || selectedRating || selectedFeatures.length > 0) && (
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-700">
-                  <span className="text-gray-400 text-sm">Active filters:</span>
+              {(selectedCategory ||
+                selectedBrands.length > 0 ||
+                selectedPriceRange ||
+                selectedRating ||
+                selectedFeatures.length > 0) && (
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-800 pt-4">
                   {selectedCategory && (
-                    <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded-md text-sm flex items-center gap-1">
-                      Category: {getSelectedCategoryName()}
-                      <button onClick={() => setSelectedCategory(null)} className="hover:text-white">✕</button>
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory(null)}
+                      className="rounded-full bg-orange-500/15 px-3 py-1 text-sm text-orange-400"
+                    >
+                      {getSelectedCategoryName()} ×
+                    </button>
                   )}
+
                   {selectedBrands.map((brand) => (
-                    <span key={brand} className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded-md text-sm flex items-center gap-1">
-                      {brand}
-                      <button onClick={() => handleBrandChange(brand)} className="hover:text-white">✕</button>
-                    </span>
+                    <button
+                      type="button"
+                      key={brand}
+                      onClick={() => handleBrandChange(brand)}
+                      className="rounded-full bg-orange-500/15 px-3 py-1 text-sm text-orange-400"
+                    >
+                      {brand} ×
+                    </button>
                   ))}
+
                   {selectedPriceRange && (
-                    <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded-md text-sm flex items-center gap-1">
-                      {selectedPriceRange.label}
-                      <button onClick={() => setSelectedPriceRange(null)}>✕</button>
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPriceRange(null)}
+                      className="rounded-full bg-orange-500/15 px-3 py-1 text-sm text-orange-400"
+                    >
+                      {selectedPriceRange.label} ×
+                    </button>
                   )}
+
                   {selectedRating && (
-                    <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded-md text-sm flex items-center gap-1">
-                      {selectedRating} Stars & Up
-                      <button onClick={() => setSelectedRating(null)}>✕</button>
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRating(null)}
+                      className="rounded-full bg-orange-500/15 px-3 py-1 text-sm text-orange-400"
+                    >
+                      {selectedRating} Stars & Up ×
+                    </button>
                   )}
+
                   {selectedFeatures.map((feature) => (
-                    <span key={feature} className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded-md text-sm flex items-center gap-1">
-                      {feature}
-                      <button onClick={() => handleFeatureChange(feature)}>✕</button>
-                    </span>
+                    <button
+                      type="button"
+                      key={feature}
+                      onClick={() => handleFeatureChange(feature)}
+                      className="rounded-full bg-orange-500/15 px-3 py-1 text-sm text-orange-400"
+                    >
+                      {feature} ×
+                    </button>
                   ))}
-                  <button onClick={clearAllFilters} className="text-orange-400 text-sm hover:underline">
+
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="text-sm text-orange-400 hover:underline"
+                  >
                     Clear all
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Products Grid */}
-            {currentProducts.length === 0 ? (
-              <div className="text-center py-16  rounded-xl border border-gray-700">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-medium mb-2">No products found</h3>
-                <p className="text-gray-400 mb-6">Try adjusting your filters</p>
-                <button onClick={clearAllFilters} className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">
+            {loading ? (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 9 }).map((_, index) => (
+                  <ProductCardSkeleton key={index} />
+                ))}
+              </div>
+            ) : currentProducts.length === 0 ? (
+              <div className="rounded-2xl border border-gray-800 bg-gray-950 py-16 text-center">
+                <div className="mb-4 text-5xl">🔍</div>
+                <h3 className="mb-2 text-xl font-semibold">
+                  No products found
+                </h3>
+                <p className="mb-6 text-gray-400">Try adjusting your filters</p>
+
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="rounded-xl bg-orange-500 px-6 py-3 font-semibold text-white transition hover:bg-orange-600"
+                >
                   Clear Filters
                 </button>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {currentProducts.map((product) => (
-                    <motion.div
+                    <ProductCard
                       key={product.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ y: -5 }}
-                      className=" rounded-xl border border-gray-700 hover:border-orange-500 transition overflow-hidden"
-                    >
-                      <Link href={`/products/${product.id}`}>
-                        <div className="bg-black h-48 flex items-center justify-center p-4">
-                          <img src={product.image} alt={product.name} className="h-full w-full object-fit rounded-md" loading="lazy" />
-                        </div>
-                        <div className="p-4 ">
-                          <h2 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-orange-400 transition">{product.name}</h2>
-                          <div className="flex items-center gap-1 mb-2">
-                            <div className="flex">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i} className={i < Math.floor(product.rating) ? "text-orange-400" : "text-gray-600"}>★</span>
-                              ))}
-                            </div>
-                            <span className="text-gray-400 text-sm">({product.reviews})</span>
-                          </div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xl font-bold text-orange-400">${product.price.toFixed(2)}</span>
-                            {product.discount && (
-                              <>
-                                <span className="text-gray-400 line-through text-sm">${product.originalPrice?.toFixed(2)}</span>
-                                <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded">-{product.discount}%</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-1 mb-4">
-                            {product.features.slice(0, 2).map((feature) => (
-                              <span key={feature} className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">{feature}</span>
-                            ))}
-                            {product.features.length > 2 && (
-                              <span className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">+{product.features.length - 2}</span>
-                            )}
-                          </div>
-                          <button className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition">Add to Cart</button>
-                        </div>
-                      </Link>
-                    </motion.div>
+                      product={product}
+                      onAddToCart={handleAddToCart}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center mt-8">
-                    <div className="flex gap-2">
+                  <div className="mt-8 flex justify-center lg:justify-end">
+                    <div className="flex flex-wrap gap-2">
                       <button
+                        type="button"
                         onClick={() => paginate(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 border border-gray-700 rounded disabled:opacity-50 hover:bg-gray-800 transition"
+                        className="rounded-xl border border-gray-800 px-4 py-2 text-sm transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Previous
                       </button>
-                      {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) pageNum = i + 1;
-                        else if (currentPage <= 3) pageNum = i + 1;
-                        else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-                        else pageNum = currentPage - 2 + i;
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => paginate(pageNum)}
-                            className={`px-3 py-1 rounded transition ${
-                              currentPage === pageNum ? "bg-orange-500 text-white" : "border border-gray-700 hover:bg-gray-800"
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
+
+                      {Array.from({ length: Math.min(5, totalPages) }).map(
+                        (_, index) => {
+                          let pageNumber: number;
+
+                          if (totalPages <= 5) pageNumber = index + 1;
+                          else if (currentPage <= 3) pageNumber = index + 1;
+                          else if (currentPage >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + index;
+                          } else {
+                            pageNumber = currentPage - 2 + index;
+                          }
+
+                          return (
+                            <button
+                              type="button"
+                              key={pageNumber}
+                              onClick={() => paginate(pageNumber)}
+                              className={`rounded-xl px-4 py-2 text-sm transition ${
+                                currentPage === pageNumber
+                                  ? "bg-orange-500 text-white"
+                                  : "border border-gray-800 hover:bg-gray-900"
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        }
+                      )}
+
                       <button
+                        type="button"
                         onClick={() => paginate(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-1 border border-gray-700 rounded disabled:opacity-50 hover:bg-gray-800 transition"
+                        className="rounded-xl border border-gray-800 px-4 py-2 text-sm transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Next
                       </button>
@@ -596,7 +584,7 @@ const ProductsPage = () => {
                 )}
               </>
             )}
-          </div>
+          </main>
         </div>
       </div>
     </div>

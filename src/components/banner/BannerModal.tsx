@@ -159,7 +159,7 @@ export default function BannerModal({
                     }`}
                   >
                     <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                      className={`inline-block h-5 w-5 transform rounded-full bg-black transition ${
                         isPublished ? "translate-x-5" : "translate-x-1"
                       }`}
                     />

@@ -1,4 +1,3 @@
-// src/components/products/CollapsibleSection.tsx
 "use client";
 
 import { useState } from "react";
@@ -18,23 +17,32 @@ const CollapsibleSection = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-xl border border-gray-700 overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-gray-800 bg-black">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex justify-between items-center w-full p-4 text-left font-semibold text-orange-400 hover:bg-gray-700/50 transition-colors"
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between px-4 py-4 text-left text-sm font-semibold text-orange-400 transition hover:bg-gray-950"
       >
         <span>{title}</span>
-        <span className="text-orange-400">{isOpen ? "−" : "+"}</span>
+        <motion.span
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="grid h-6 w-6 place-items-center rounded-full bg-orange-500/10 text-lg leading-none"
+        >
+          {isOpen ? "−" : "+"}
+        </motion.span>
       </button>
-      <AnimatePresence>
+
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            className="overflow-hidden"
           >
-            <div className="px-4 pb-4">{children}</div>
+            <div className="px-4 pb-4 text-sm text-gray-300">{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
