@@ -39,15 +39,9 @@ body {
 .hero-overlap-swiper .swiper-slide {
   width: 100% !important;
   height: auto;
-  opacity: 1 !important;
   overflow: hidden;
   backface-visibility: hidden;
-}
-
-.hero-overlap-swiper .swiper-slide-active,
-.hero-overlap-swiper .swiper-slide-prev,
-.hero-overlap-swiper .swiper-slide-next {
-  opacity: 1 !important;
+  transform: translateZ(0);
 }
 
 .hero-overlap-swiper .swiper-pagination {
@@ -67,6 +61,7 @@ body {
   height: 9px;
   background: white;
   opacity: 0.65;
+  transition: all 0.35s ease;
 }
 
 .hero-overlap-swiper .swiper-pagination-bullet-active {
@@ -78,7 +73,7 @@ body {
 
 @media (max-width: 767px) {
   .hero-overlap-swiper .swiper-wrapper {
-    transition-timing-function: ease-in-out !important;
+    transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1) !important;
   }
 
   .hero-overlap-swiper .swiper-pagination {

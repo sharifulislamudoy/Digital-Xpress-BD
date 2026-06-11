@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectCreative, Pagination } from "swiper/modules";
+import { Autoplay, Pagination } from "swiper/modules";
 
 import "swiper/css";
-import "swiper/css/effect-creative";
 import "swiper/css/pagination";
 
 interface Banner {
@@ -57,14 +56,10 @@ function HeroBannerSkeleton() {
           <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" />
 
           <div className="absolute inset-0 animate-pulse">
-            <div className="absolute left-5 top-5 h-8 w-32 rounded-lg bg-gray-700/70 sm:left-8 sm:top-8 md:h-10 md:w-44" />
-            <div className="absolute left-5 top-20 h-5 w-52 rounded bg-gray-700/60 sm:left-8 sm:top-24 md:h-7 md:w-80" />
-            <div className="absolute left-5 top-32 h-5 w-40 rounded bg-gray-700/50 sm:left-8 sm:top-36 md:h-6 md:w-64" />
-
-            <div className="absolute bottom-5 left-5 h-10 w-28 rounded-full bg-gray-700/60 sm:left-8 sm:bottom-8 md:h-12 md:w-36" />
+            <div className="absolute inset-0 bg-gray-800/70" />
 
             <div className="absolute bottom-4 right-4 flex gap-2 sm:bottom-6 sm:right-6">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-600" />
+              <span className="h-2.5 w-7 rounded-full bg-gray-600" />
               <span className="h-2.5 w-2.5 rounded-full bg-gray-700" />
               <span className="h-2.5 w-2.5 rounded-full bg-gray-700" />
             </div>
@@ -127,15 +122,15 @@ export default function HeroSlider() {
     <section className="w-full bg-[#080b12] py-3 sm:py-4 md:py-6">
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6">
         <Swiper
-          modules={[Autoplay, EffectCreative, Pagination]}
-          effect="creative"
-          grabCursor
+          modules={[Autoplay, Pagination]}
+          slidesPerView={1}
+          spaceBetween={0}
           loop={banners.length > 1}
-          watchSlidesProgress
+          grabCursor={banners.length > 1}
           observer
           observeParents
           resizeObserver
-          speed={1000}
+          speed={950}
           autoplay={
             banners.length > 1
               ? {
@@ -152,29 +147,6 @@ export default function HeroSlider() {
                 }
               : false
           }
-          creativeEffect={{
-            limitProgress: 2,
-            prev: {
-              translate: [0, 0, 0],
-              opacity: 1,
-              scale: 1,
-            },
-            next: {
-              translate: ["100%", 0, 1],
-              opacity: 1,
-              scale: 1,
-            },
-          }}
-          breakpoints={{
-            0: {
-              effect: "slide",
-              speed: 700,
-            },
-            768: {
-              effect: "creative",
-              speed: 1000,
-            },
-          }}
           className="hero-overlap-swiper rounded-xl md:rounded-2xl"
         >
           {banners.map((banner, index) => {
