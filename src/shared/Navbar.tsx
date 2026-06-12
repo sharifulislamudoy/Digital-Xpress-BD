@@ -1,33 +1,32 @@
+// components/navbar/Navbar.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import {
   FaEnvelope,
   FaFacebook,
   FaInstagram,
   FaPhoneAlt,
   FaSearch,
+  FaShoppingCart,
   FaTwitter,
   FaUser,
   FaWhatsapp,
+  FaHeart,
 } from "react-icons/fa";
 import { Logo } from "@/components/navbar/Logo";
 import { NavLinks } from "@/components/navbar/NavLinks";
-import { CartIcon } from "@/components/navbar/CartIcon";
 import { AuthButtons } from "@/components/navbar/AuthButtons";
 import { MobileDrawer } from "@/components/navbar/MobileDrawer";
 import { SearchModal } from "@/components/navbar/SearchModal";
 import { AccountDrawer } from "@/components/navbar/AccountDrawer";
 import { BottomNav } from "@/components/navbar/BottomNav";
-
-
-
+import { CartDrawer } from "@/components/navbar/CartDrawer";
 
 interface NavbarProps {
-  cartItemCount?: number;
-  cartSubtotal?: number;
   logoSrc?: string;
 }
 
@@ -49,13 +48,11 @@ const HamburgerButton = ({
           isOpen ? "rotate-45 translate-y-[11px]" : ""
         }`}
       />
-
       <span
         className={`w-7 h-0.5 bg-white rounded-full transition-all duration-300 ${
           isOpen ? "opacity-0" : ""
         }`}
       />
-
       <span
         className={`w-7 h-0.5 bg-white rounded-full transition-all duration-300 ${
           isOpen ? "-rotate-45 -translate-y-[11px]" : ""
@@ -65,29 +62,51 @@ const HamburgerButton = ({
   );
 };
 
-const Navbar = ({
-  cartItemCount = 0,
-  cartSubtotal = 0,
-  logoSrc = "/favicon.png",
-}: NavbarProps) => {
+const Navbar = ({ logoSrc = "/favicon.png" }: NavbarProps) => {
   const { data: session } = useSession();
-
   const user = session?.user ?? null;
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  // Load cart count from localStorage
+  useEffect(() => {
+    const loadCartCount = () => {
+      if (typeof window === "undefined") return;
+      try {
+        const cart = localStorage.getItem("digital-xpress-cart");
+        if (cart) {
+          const items = JSON.parse(cart);
+          const count = items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+          setCartItemCount(count);
+        } else {
+          setCartItemCount(0);
+        }
+      } catch {
+        setCartItemCount(0);
+      }
+    };
+
+    loadCartCount();
+
+    const handleCartUpdate = () => {
+      loadCartCount();
+    };
+
+    window.addEventListener("digital-xpress-cart-updated", handleCartUpdate);
+    return () => window.removeEventListener("digital-xpress-cart-updated", handleCartUpdate);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-
     handleScroll();
-
     window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -102,7 +121,7 @@ const Navbar = ({
         {/* Mobile top navbar */}
         <div className="lg:hidden max-w-7xl mx-auto px-4">
           <div
-            className={`flex items-center gap-4 transition-all duration-300 ${
+            className={`flex items-center justify-between transition-all duration-300 ${
               isScrolled ? "py-2" : "py-3"
             }`}
           >
@@ -111,7 +130,20 @@ const Navbar = ({
               onClick={() => setIsMobileDrawerOpen(true)}
             />
 
-            <Logo imageSrc={logoSrc} className="scale-95 origin-left" />
+            <Logo imageSrc={logoSrc} className="scale-95" />
+
+            <button
+              onClick={() => setIsCartDrawerOpen(true)}
+              className="relative p-2 rounded-full hover:bg-gray-800 transition text-white"
+              aria-label="Open cart"
+            >
+              <FaShoppingCart size={20} />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] flex items-center justify-center border border-black">
+                  {cartItemCount > 99 ? "99+" : cartItemCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -132,7 +164,6 @@ const Navbar = ({
                 <FaPhoneAlt size={12} />
                 <span>+8801995322033</span>
               </a>
-
               <a
                 href="mailto:info@digital-xpress.com"
                 className="flex items-center gap-2 hover:text-orange-500 transition"
@@ -141,7 +172,6 @@ const Navbar = ({
                 <span>info@digital-xpress.com</span>
               </a>
             </div>
-
             <div className="flex items-center gap-4">
               <a
                 href="https://www.facebook.com/digitalxpressbd1/"
@@ -151,7 +181,6 @@ const Navbar = ({
               >
                 <FaFacebook />
               </a>
-
               <a
                 href="https://twitter.com"
                 target="_blank"
@@ -160,7 +189,6 @@ const Navbar = ({
               >
                 <FaTwitter />
               </a>
-
               <a
                 href="https://wa.me/8801995322033"
                 target="_blank"
@@ -169,7 +197,6 @@ const Navbar = ({
               >
                 <FaWhatsapp />
               </a>
-
               <a
                 href="https://instagram.com"
                 target="_blank"
@@ -199,7 +226,27 @@ const Navbar = ({
                 <FaSearch size={20} />
               </button>
 
-              <CartIcon itemCount={cartItemCount} subtotal={cartSubtotal} />
+              <button
+                onClick={() => setIsCartDrawerOpen(true)}
+                className="relative p-2 rounded-full hover:bg-gray-800 transition text-white"
+                aria-label="Cart"
+              >
+                <FaShoppingCart size={20} />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] flex items-center justify-center border border-black">
+                    {cartItemCount > 99 ? "99+" : cartItemCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Favorite Button - Desktop only */}
+              <Link
+                href="/favorites"
+                className="p-2 rounded-full hover:bg-gray-800 transition text-white"
+                aria-label="Favorites"
+              >
+                <FaHeart size={20} />
+              </Link>
 
               {user ? (
                 <button
@@ -243,10 +290,15 @@ const Navbar = ({
         user={user}
       />
 
+      <CartDrawer
+        isOpen={isCartDrawerOpen}
+        onClose={() => setIsCartDrawerOpen(false)}
+      />
+
       <BottomNav
-        itemCount={cartItemCount}
         onSearchClick={() => setIsSearchModalOpen(true)}
         onAccountClick={() => setIsAccountDrawerOpen(true)}
+        onCartClick={() => setIsCartDrawerOpen(true)}
       />
     </>
   );

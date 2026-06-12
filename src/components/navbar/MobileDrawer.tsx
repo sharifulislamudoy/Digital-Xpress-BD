@@ -78,11 +78,7 @@ const exploreItems = [
     href: "/products?sort=popular",
     icon: <FaStar />,
   },
-  {
-    name: "All Products",
-    href: "/products",
-    icon: <FaThLarge />,
-  },
+
 ];
 
 const supportItems = [
