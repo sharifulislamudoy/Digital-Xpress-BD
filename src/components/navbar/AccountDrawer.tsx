@@ -11,6 +11,7 @@ import {
   FaSignOutAlt,
   FaTimes,
   FaUser,
+  FaTachometerAlt,
 } from "react-icons/fa";
 
 interface AccountDrawerProps {
@@ -20,6 +21,7 @@ interface AccountDrawerProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: string | null;   // <-- added role
   } | null;
 }
 
@@ -134,6 +136,29 @@ export const AccountDrawer = ({
                   </div>
 
                   <div className="space-y-2">
+
+                    {/* Role‑based dashboard link */}
+                    {user.role === "admin" && (
+                      <Link
+                        href="/admin"
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-900 transition text-white"
+                      >
+                        <FaTachometerAlt className="text-orange-500" />
+                        <span>Admin Dashboard</span>
+                      </Link>
+                    )}
+
+                    {user.role === "moderator" && (
+                      <Link
+                        href="/moderator"
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-900 transition text-white"
+                      >
+                        <FaTachometerAlt className="text-orange-500" />
+                        <span>Moderator Panel</span>
+                      </Link>
+                    )}
                     <Link
                       href="/profile"
                       onClick={onClose}
@@ -150,15 +175,6 @@ export const AccountDrawer = ({
                     >
                       <FaBox className="text-orange-500" />
                       <span>My Orders</span>
-                    </Link>
-
-                    <Link
-                      href="/wishlist"
-                      onClick={onClose}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-900 transition text-white"
-                    >
-                      <FaHeart className="text-orange-500" />
-                      <span>Wishlist</span>
                     </Link>
 
                     <Link

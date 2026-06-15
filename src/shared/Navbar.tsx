@@ -1,4 +1,3 @@
-// components/navbar/Navbar.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -40,21 +39,21 @@ const HamburgerButton = ({
   return (
     <button
       onClick={onClick}
-      className="relative w-7 h-6 flex flex-col justify-between items-center focus:outline-none"
+      className="relative h-4 flex flex-col justify-between items-center focus:outline-none"
       aria-label="Open menu"
     >
       <span
-        className={`w-7 h-0.5 bg-white rounded-full transition-all duration-300 ${
+        className={`w-5 h-0.5 bg-white rounded-full transition-all duration-300 ${
           isOpen ? "rotate-45 translate-y-[11px]" : ""
         }`}
       />
       <span
-        className={`w-7 h-0.5 bg-white rounded-full transition-all duration-300 ${
+        className={`w-5 h-0.5 bg-white rounded-full transition-all duration-300 ${
           isOpen ? "opacity-0" : ""
         }`}
       />
       <span
-        className={`w-7 h-0.5 bg-white rounded-full transition-all duration-300 ${
+        className={`w-5 h-0.5 bg-white rounded-full transition-all duration-300 ${
           isOpen ? "-rotate-45 -translate-y-[11px]" : ""
         }`}
       />
@@ -72,6 +71,7 @@ const Navbar = ({ logoSrc = "/favicon.png" }: NavbarProps) => {
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   // Load cart count from localStorage
   useEffect(() => {
@@ -81,7 +81,10 @@ const Navbar = ({ logoSrc = "/favicon.png" }: NavbarProps) => {
         const cart = localStorage.getItem("digital-xpress-cart");
         if (cart) {
           const items = JSON.parse(cart);
-          const count = items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+          const count = items.reduce(
+            (sum: number, item: any) => sum + (item.quantity || 1),
+            0
+          );
           setCartItemCount(count);
         } else {
           setCartItemCount(0);
@@ -98,7 +101,42 @@ const Navbar = ({ logoSrc = "/favicon.png" }: NavbarProps) => {
     };
 
     window.addEventListener("digital-xpress-cart-updated", handleCartUpdate);
-    return () => window.removeEventListener("digital-xpress-cart-updated", handleCartUpdate);
+    return () =>
+      window.removeEventListener("digital-xpress-cart-updated", handleCartUpdate);
+  }, []);
+
+  // Load favorite count from localStorage
+  useEffect(() => {
+    const loadFavoriteCount = () => {
+      if (typeof window === "undefined") return;
+      try {
+        const wishlist = localStorage.getItem("digital-xpress-wishlist");
+        if (wishlist) {
+          const items = JSON.parse(wishlist);
+          setFavoriteCount(items.length);
+        } else {
+          setFavoriteCount(0);
+        }
+      } catch {
+        setFavoriteCount(0);
+      }
+    };
+
+    loadFavoriteCount();
+
+    const handleWishlistUpdate = () => {
+      loadFavoriteCount();
+    };
+
+    window.addEventListener(
+      "digital-xpress-wishlist-updated",
+      handleWishlistUpdate
+    );
+    return () =>
+      window.removeEventListener(
+        "digital-xpress-wishlist-updated",
+        handleWishlistUpdate
+      );
   }, []);
 
   useEffect(() => {
@@ -125,12 +163,14 @@ const Navbar = ({ logoSrc = "/favicon.png" }: NavbarProps) => {
               isScrolled ? "py-2" : "py-3"
             }`}
           >
-            <HamburgerButton
-              isOpen={isMobileDrawerOpen}
-              onClick={() => setIsMobileDrawerOpen(true)}
-            />
+            <div className="flex items-center gap-2">
+              <HamburgerButton
+                isOpen={isMobileDrawerOpen}
+                onClick={() => setIsMobileDrawerOpen(true)}
+              />
 
-            <Logo imageSrc={logoSrc} className="scale-95" />
+              <Logo imageSrc={logoSrc} className="scale-95" />
+            </div>
 
             <button
               onClick={() => setIsCartDrawerOpen(true)}
@@ -239,13 +279,18 @@ const Navbar = ({ logoSrc = "/favicon.png" }: NavbarProps) => {
                 )}
               </button>
 
-              {/* Favorite Button - Desktop only */}
+              {/* Favorite Button (Desktop) with badge */}
               <Link
                 href="/favorites"
-                className="p-2 rounded-full hover:bg-gray-800 transition text-white"
+                className="relative p-2 rounded-full hover:bg-gray-800 transition text-white"
                 aria-label="Favorites"
               >
                 <FaHeart size={20} />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] flex items-center justify-center border border-black">
+                    {favoriteCount > 99 ? "99+" : favoriteCount}
+                  </span>
+                )}
               </Link>
 
               {user ? (

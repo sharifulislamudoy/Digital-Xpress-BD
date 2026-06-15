@@ -1,29 +1,140 @@
-export interface Product {
-  id: number;
+export type ProfitType = "FIXED" | "PERCENTAGE";
+
+export type StockStatus =
+  | "IN_STOCK"
+  | "LIMITED_STOCK"
+  | "LOW_STOCK"
+  | "OUT_OF_STOCK"
+  | "PRE_ORDER"
+  | "COMING_SOON";
+
+export interface ProductSubCategory {
+  id: string;
   name: string;
-  brand: string;
-  price: number;
-  rating: number;
-  features: string[];
-  reviews: number;
-  category: string;
-  image: string;
-  hoverImage?: string;
-  popularity: number;
-  date: string;
+  slug: string;
+  categoryId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  slug: string;
+  subCategories?: ProductSubCategory[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProductBrand {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProductImage {
+  id: string;
+  productId: string;
+  imageUrl: string;
+  cloudinaryPublicId?: string;
+  sortOrder: number;
+  createdAt?: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+
+  modelName?: string | null;
+
+  shortDescription?: string | null;
+  description: string;
+
+  mrp: number;
+  sellingPrice: number;
+  price?: number;
+
+  costPrice?: number;
+  profitType?: ProfitType;
+  profitValue?: number;
+
+  stock?: number;
+  stockStatus: StockStatus;
+  stockStatusLabel?: string;
+  canAddToCart?: boolean;
+
+  inStock: boolean;
+  isPublished?: boolean;
+
+  mainImageUrl: string;
+  mainImagePublicId?: string;
+
+  hoverImageUrl?: string | null;
+  hoverImagePublicId?: string | null;
+
+  videoUrl?: string | null;
+  videoPublicId?: string | null;
+
+  image?: string;
+  hoverImage?: string | null;
+
+  category?: ProductCategory | null;
+  subCategory?: ProductSubCategory | null;
+  brand?: ProductBrand | null;
+
+  extraImages?: ProductImage[];
+
+  createdAt?: string;
+  updatedAt?: string;
+
+  rating?: number;
+  reviews?: number;
   discount?: number;
   originalPrice?: number;
-  inStock?: boolean;
-  stock?: number;
 }
 
-export interface Category {
-  slug: string;
-  name: string;
+export const priceRanges = [
+  { min: 0, max: 500, label: "Under $500" },
+  { min: 500, max: 1000, label: "$500 - $1000" },
+  { min: 1000, max: 2000, label: "$1000 - $2000" },
+  { min: 2000, max: 5000, label: "$2000 - $5000" },
+  { min: 5000, max: Infinity, label: "Above $5000" },
+];
+
+export const stockStatusLabels: Record<StockStatus, string> = {
+  IN_STOCK: "In stock",
+  LIMITED_STOCK: "Limited stock",
+  LOW_STOCK: "Low stock",
+  OUT_OF_STOCK: "Out of stock",
+  PRE_ORDER: "Pre-order",
+  COMING_SOON: "Coming soon",
+};
+
+export const purchasableStockStatuses: StockStatus[] = [
+  "IN_STOCK",
+  "LIMITED_STOCK",
+  "LOW_STOCK",
+  "PRE_ORDER",
+];
+
+export function canProductBeAddedToCart(product: Product) {
+  if (typeof product.canAddToCart === "boolean") return product.canAddToCart;
+  return purchasableStockStatuses.includes(product.stockStatus);
 }
 
-export interface PriceRange {
-  min: number;
-  max: number;
-  label: string;
+export function getStockStatusLabel(status?: StockStatus) {
+  if (!status) return "In stock";
+  return stockStatusLabels[status] || "In stock";
+}
+
+export function getDiscountPercentage(product: Product) {
+  const mrp = Number(product.mrp || product.originalPrice || 0);
+  const sellingPrice = Number(product.sellingPrice || product.price || 0);
+
+  if (!mrp || !sellingPrice || mrp <= sellingPrice) return 0;
+
+  return Math.round(((mrp - sellingPrice) / mrp) * 100);
 }

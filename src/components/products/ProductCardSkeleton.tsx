@@ -6,8 +6,8 @@ const ProductCardSkeleton = () => {
       <div className="space-y-3 bg-black/55 p-4 backdrop-blur-xl">
         <div className="h-4 w-4/5 animate-pulse rounded bg-white/10" />
         <div className="h-3 w-3/5 animate-pulse rounded bg-white/10" />
-        <div className="mx-auto h-4 w-28 animate-pulse rounded bg-orange-400/15" />
-        <div className="mx-auto h-5 w-24 animate-pulse rounded bg-white/10" />
+        <div className="h-4 w-28 animate-pulse rounded bg-orange-400/15" />
+        <div className="h-5 w-24 animate-pulse rounded bg-white/10" />
       </div>
     </div>
   );
