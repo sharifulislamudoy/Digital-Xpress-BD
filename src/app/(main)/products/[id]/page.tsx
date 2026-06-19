@@ -11,6 +11,7 @@ import type { Product, ProductImage } from "@/types/product";
 import {
   canProductBeAddedToCart,
   getDiscountPercentage,
+  getProductBadges,
   getStockStatusLabel,
 } from "@/types/product";
 import { formatPrice } from "@/lib/formatPrice";
@@ -25,7 +26,7 @@ type StoredCartProduct = Product & {
   updatedAt: string;
 };
 
-type TabKey = "description" | "specifications" | "reviews" | "policy";
+type TabKey = "description" | "specifications" | "features" | "policy";
 
 type ProductApiResponse = {
   success?: boolean;
@@ -59,8 +60,8 @@ type ProductMediaShape = Product & {
 const tabs: { key: TabKey; label: string }[] = [
   { key: "description", label: "Description" },
   { key: "specifications", label: "Specifications" },
-  { key: "reviews", label: "Reviews" },
-  { key: "policy", label: "Policy" },
+  { key: "features", label: "Features & Highlights" },
+  { key: "policy", label: "Policies & Delivery" },
 ];
 
 const cx = (...classes: Array<string | false | null | undefined>) =>
@@ -83,28 +84,22 @@ const getOptionalNumber = (value: unknown) => {
 
 const getStockQuantity = (product: Product | null) => {
   if (!product) return null;
-
   const stock = (product as ProductMediaShape).stock;
   return typeof stock === "number" && Number.isFinite(stock) ? stock : null;
 };
 
 const getMaxSelectableQuantity = (product: Product | null) => {
   const stockQuantity = getStockQuantity(product);
-
   if (stockQuantity !== null && stockQuantity > 0) {
     return Math.min(stockQuantity, 99);
   }
-
   return 99;
 };
 
 const getMediaUrl = (item: unknown): string => {
   if (typeof item === "string") return item.trim();
-
   if (!item || typeof item !== "object") return "";
-
   const record = item as Record<string, unknown>;
-
   const possibleKeys = [
     "imageUrl",
     "mainImageUrl",
@@ -118,15 +113,12 @@ const getMediaUrl = (item: unknown): string => {
     "secureUrl",
     "thumbnail",
   ];
-
   for (const key of possibleKeys) {
     const value = record[key];
-
     if (typeof value === "string" && value.trim()) {
       return value.trim();
     }
   }
-
   return "";
 };
 
@@ -141,11 +133,8 @@ const buildMediaItems = (product: Product): MediaItem[] => {
     label: string
   ) => {
     const cleanUrl = getMediaUrl(source);
-
     if (!cleanUrl || seenUrls.has(cleanUrl)) return;
-
     seenUrls.add(cleanUrl);
-
     items.push({
       type,
       url: cleanUrl,
@@ -153,13 +142,10 @@ const buildMediaItems = (product: Product): MediaItem[] => {
     });
   };
 
-  // Video priority: if product has video, it will be first and active by default.
   addMedia("video", mediaProduct.videoUrl, "Product video");
-
   addMedia("image", mediaProduct.mainImageUrl, "Main image");
   addMedia("image", mediaProduct.image, "Main image");
   addMedia("image", mediaProduct.imageUrl, "Product image");
-
   addMedia("image", mediaProduct.hoverImageUrl, "Hover image");
   addMedia("image", mediaProduct.hoverImage, "Hover image");
 
@@ -167,7 +153,6 @@ const buildMediaItems = (product: Product): MediaItem[] => {
     const sortedExtraImages = [...mediaProduct.extraImages].sort(
       (a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0)
     );
-
     sortedExtraImages.forEach((image, index) => {
       addMedia("image", image.imageUrl, `Extra image ${index + 1}`);
     });
@@ -329,7 +314,6 @@ const ProductDetailsPage = () => {
         }
       } catch {
         if (!isActive) return;
-
         setProduct(null);
         setRelatedProducts([]);
         toast.error("Failed to load product details");
@@ -364,6 +348,9 @@ const ProductDetailsPage = () => {
     const stockQuantity = getStockQuantity(product);
     const sku = getText((product as ProductMediaShape).sku, "");
     const warranty = getText((product as ProductMediaShape).warranty, "");
+    const badges = getProductBadges(product);
+    const rating = product.averageRating ? Number(product.averageRating) : null;
+    const reviewCount = product.totalReviews || 0;
 
     return {
       sellingPrice,
@@ -383,14 +370,33 @@ const ProductDetailsPage = () => {
       brandName: getText(product.brand?.name, ""),
       categoryName: getText(product.category?.name, ""),
       subCategoryName: getText(product.subCategory?.name, ""),
-      reviewCount: getOptionalNumber(product.reviews),
-      rating: getOptionalNumber(product.rating),
+      rating,
+      reviewCount,
+      badges,
+      keyFeatures: product.keyFeatures || [],
+      highlights: product.highlights || [],
+      specifications: product.specifications || {},
+      warrantyDuration: product.warrantyDuration,
+      warrantyDetails: product.warrantyDetails,
+      returnPolicy: product.returnPolicy,
+      replacementPolicy: product.replacementPolicy,
+      refundPolicy: product.refundPolicy,
+      deliveryInfo: product.deliveryInfo,
+      deliveryCharge: product.deliveryCharge ? Number(product.deliveryCharge) : null,
+      insideDhakaDeliveryCharge: product.insideDhakaDeliveryCharge ? Number(product.insideDhakaDeliveryCharge) : null,
+      outsideDhakaDeliveryCharge: product.outsideDhakaDeliveryCharge ? Number(product.outsideDhakaDeliveryCharge) : null,
+      deliveryTime: product.deliveryTime,
+      cashOnDelivery: product.cashOnDelivery,
+      freeDelivery: product.freeDelivery,
+      freeDeliveryMinAmount: product.freeDeliveryMinAmount ? Number(product.freeDeliveryMinAmount) : null,
+      packageIncludes: product.packageIncludes || [],
+      packageWeight: product.packageWeight,
+      packageDimensions: product.packageDimensions,
     };
   }, [product]);
 
   const handleQuantityChange = (change: number) => {
     const maxQuantity = getMaxSelectableQuantity(product);
-
     setQuantity((prev) => Math.max(1, Math.min(maxQuantity, prev + change)));
   };
 
@@ -483,14 +489,11 @@ const ProductDetailsPage = () => {
           <div className="mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-orange-500/10 text-3xl text-orange-400">
             !
           </div>
-
           <h1 className="text-2xl font-bold">Product not found</h1>
-
           <p className="mt-3 text-sm leading-6 text-zinc-400">
             The product may be unavailable, unpublished, or removed from the
             store.
           </p>
-
           <Link
             href="/products"
             className="mt-7 rounded-2xl bg-orange-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-500"
@@ -577,6 +580,14 @@ const ProductDetailsPage = () => {
                       {item}
                     </span>
                   ))}
+                  {productInfo.badges.map((badge) => (
+                    <span
+                      key={badge}
+                      className="rounded-full border border-orange-400/30 bg-black/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-orange-300"
+                    >
+                      {badge}
+                    </span>
+                  ))}
                 </div>
 
                 <h1 className="break-words text-2xl font-black leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">
@@ -592,8 +603,8 @@ const ProductDetailsPage = () => {
 
                   {productInfo.rating !== null && (
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
-                      ★ {productInfo.rating}
-                      {productInfo.reviewCount !== null
+                      ★ {productInfo.rating.toFixed(1)}
+                      {productInfo.reviewCount > 0
                         ? ` (${productInfo.reviewCount} reviews)`
                         : ""}
                     </span>
@@ -758,64 +769,193 @@ const ProductDetailsPage = () => {
             )}
 
             {selectedTab === "specifications" && (
-              <div className="grid gap-3 md:grid-cols-2">
-                {specificationRows.map((item) => (
-                  <div
-                    key={item.label}
-                    className="min-w-0 rounded-2xl border border-white/10 bg-black/35 p-4"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                      {item.label}
-                    </p>
-                    <p className="mt-2 break-words text-sm font-semibold text-white">
-                      {item.value}
+              <div>
+                {productInfo.specifications &&
+                Object.keys(productInfo.specifications).length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {Object.entries(productInfo.specifications).map(
+                      ([key, value]) => (
+                        <div
+                          key={key}
+                          className="min-w-0 rounded-2xl border border-white/10 bg-black/35 p-4"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                            {key}
+                          </p>
+                          <p className="mt-2 break-words text-sm font-semibold text-white">
+                            {String(value)}
+                          </p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-white/10 bg-black/35 p-6 text-center sm:p-8">
+                    <p className="text-sm text-zinc-400">
+                      No specifications available.
                     </p>
                   </div>
-                ))}
+                )}
               </div>
             )}
 
-            {selectedTab === "reviews" && (
-              <div className="rounded-3xl border border-white/10 bg-black/35 p-6 text-center sm:p-8">
-                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-orange-500/10 text-2xl text-orange-300">
-                  ★
-                </div>
+            {selectedTab === "features" && (
+              <div className="space-y-6">
+                {productInfo.keyFeatures.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-lg font-bold text-white">
+                      Key Features
+                    </h3>
+                    <ul className="list-inside list-disc space-y-1 text-sm text-zinc-300">
+                      {productInfo.keyFeatures.map((feature, idx) => (
+                        <li key={idx}>{feature}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                <h3 className="text-xl font-black text-white">
-                  Customer reviews
-                </h3>
+                {productInfo.highlights.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-lg font-bold text-white">
+                      Highlights
+                    </h3>
+                    <ul className="list-inside list-disc space-y-1 text-sm text-zinc-300">
+                      {productInfo.highlights.map((highlight, idx) => (
+                        <li key={idx}>{highlight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-zinc-400">
-                  Reviews will appear here once customers start sharing their
-                  experience with this product.
-                </p>
+                {productInfo.packageIncludes.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-lg font-bold text-white">
+                      Package Includes
+                    </h3>
+                    <ul className="list-inside list-disc space-y-1 text-sm text-zinc-300">
+                      {productInfo.packageIncludes.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                <button
-                  type="button"
-                  className="mt-6 rounded-2xl border border-orange-500 px-6 py-3 text-sm font-bold text-orange-300 transition hover:bg-orange-500 hover:text-white"
-                >
-                  Write a Review
-                </button>
+                {productInfo.packageWeight && (
+                  <p className="text-sm text-zinc-400">
+                    <span className="font-semibold text-white">Package Weight:</span> {productInfo.packageWeight}
+                  </p>
+                )}
+
+                {productInfo.packageDimensions && (
+                  <p className="text-sm text-zinc-400">
+                    <span className="font-semibold text-white">Package Dimensions:</span> {productInfo.packageDimensions}
+                  </p>
+                )}
+
+                {productInfo.keyFeatures.length === 0 &&
+                  productInfo.highlights.length === 0 &&
+                  productInfo.packageIncludes.length === 0 &&
+                  !productInfo.packageWeight &&
+                  !productInfo.packageDimensions && (
+                    <div className="rounded-3xl border border-white/10 bg-black/35 p-6 text-center sm:p-8">
+                      <p className="text-sm text-zinc-400">
+                        No additional features or highlights provided.
+                      </p>
+                    </div>
+                  )}
               </div>
             )}
 
             {selectedTab === "policy" && (
-              <div className="grid gap-4 md:grid-cols-3">
-                <PolicyCard
-                  icon={<ReturnIcon />}
-                  title="Refund & Return"
-                  text="Unboxing video is mandatory for return or refund claims."
-                />
-                <PolicyCard
-                  icon={<ShieldIcon />}
-                  title="Warranty Support"
-                  text="Warranty depends on the product, brand, and supplier policy."
-                />
-                <PolicyCard
-                  icon={<TruckIcon />}
-                  title="Delivery"
-                  text="Delivery charge and time may vary based on customer location."
-                />
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {productInfo.warrantyDuration && (
+                    <PolicyCard
+                      icon={<ShieldIcon />}
+                      title="Warranty"
+                      text={`${productInfo.warrantyDuration}${
+                        productInfo.warrantyDetails
+                          ? ` - ${productInfo.warrantyDetails}`
+                          : ""
+                      }`}
+                    />
+                  )}
+                  {productInfo.returnPolicy && (
+                    <PolicyCard
+                      icon={<ReturnIcon />}
+                      title="Return Policy"
+                      text={productInfo.returnPolicy}
+                    />
+                  )}
+                  {productInfo.replacementPolicy && (
+                    <PolicyCard
+                      icon={<ReturnIcon />}
+                      title="Replacement Policy"
+                      text={productInfo.replacementPolicy}
+                    />
+                  )}
+                  {productInfo.refundPolicy && (
+                    <PolicyCard
+                      icon={<ReturnIcon />}
+                      title="Refund Policy"
+                      text={productInfo.refundPolicy}
+                    />
+                  )}
+                </div>
+
+                <div className="rounded-3xl border border-white/10 bg-black/35 p-6">
+                  <h3 className="mb-4 text-lg font-bold text-white">
+                    Delivery Information
+                  </h3>
+                  <div className="space-y-2 text-sm text-zinc-300">
+                    {productInfo.deliveryInfo && (
+                      <p>{productInfo.deliveryInfo}</p>
+                    )}
+                    {productInfo.deliveryTime && (
+                      <p>
+                        <span className="font-semibold text-white">Estimated Delivery:</span> {productInfo.deliveryTime}
+                      </p>
+                    )}
+                    {productInfo.deliveryCharge !== null && (
+                      <p>
+                        <span className="font-semibold text-white">Delivery Charge:</span> {formatPrice(productInfo.deliveryCharge)}
+                      </p>
+                    )}
+                    {productInfo.insideDhakaDeliveryCharge !== null && (
+                      <p>
+                        <span className="font-semibold text-white">Inside Dhaka Charge:</span> {formatPrice(productInfo.insideDhakaDeliveryCharge)}
+                      </p>
+                    )}
+                    {productInfo.outsideDhakaDeliveryCharge !== null && (
+                      <p>
+                        <span className="font-semibold text-white">Outside Dhaka Charge:</span> {formatPrice(productInfo.outsideDhakaDeliveryCharge)}
+                      </p>
+                    )}
+                    {productInfo.freeDelivery && (
+                      <p className="text-emerald-400">
+                        Free Delivery
+                        {productInfo.freeDeliveryMinAmount !== null &&
+                          ` (orders over ${formatPrice(productInfo.freeDeliveryMinAmount)})`}
+                      </p>
+                    )}
+                    {productInfo.cashOnDelivery !== undefined && (
+                      <p>
+                        <span className="font-semibold text-white">Cash on Delivery:</span> {productInfo.cashOnDelivery ? "Available" : "Not Available"}
+                      </p>
+                    )}
+                    {!productInfo.deliveryInfo &&
+                      !productInfo.deliveryTime &&
+                      productInfo.deliveryCharge === null &&
+                      productInfo.insideDhakaDeliveryCharge === null &&
+                      productInfo.outsideDhakaDeliveryCharge === null &&
+                      !productInfo.freeDelivery &&
+                      productInfo.cashOnDelivery === undefined && (
+                        <p className="text-zinc-400">
+                          No delivery information available.
+                        </p>
+                      )}
+                  </div>
+                </div>
               </div>
             )}
           </div>

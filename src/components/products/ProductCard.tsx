@@ -9,6 +9,7 @@ import type { Product } from "@/types/product";
 import {
   canProductBeAddedToCart,
   getDiscountPercentage,
+  getProductBadges,
   getStockStatusLabel,
 } from "@/types/product";
 import { formatPrice } from "@/lib/formatPrice";
@@ -34,7 +35,6 @@ const WISHLIST_STORAGE_KEY = "digital-xpress-wishlist";
 
 const readLocalStorage = <T,>(key: string, fallback: T): T => {
   if (typeof window === "undefined") return fallback;
-
   try {
     const stored = window.localStorage.getItem(key);
     return stored ? (JSON.parse(stored) as T) : fallback;
@@ -98,13 +98,13 @@ const ProductCard = ({
   const productHref = `/products/${product.slug || product.id}`;
   const canAddToCart = canProductBeAddedToCart(product);
   const stockLabel = getStockStatusLabel(product.stockStatus);
+  const badges = getProductBadges(product).slice(0, 2);
 
   useEffect(() => {
     const wishlist = readLocalStorage<StoredWishlistProduct[]>(
       WISHLIST_STORAGE_KEY,
       []
     );
-
     setIsWishlisted(wishlist.some((item) => item.id === product.id));
   }, [product.id]);
 
@@ -226,28 +226,39 @@ const ProductCard = ({
         <Link href={productHref} className="absolute inset-0 block">
           <img
             src={image}
-            alt={product.name}
+            alt={product.mainImageAlt || product.name}
             className="h-full w-full object-contain p-3 transition duration-500 ease-out md:group-hover/card:scale-105 md:group-hover/card:opacity-0"
           />
 
           <img
             src={hoverImage}
-            alt={`${product.name} hover`}
+            alt={product.hoverImageAlt || `${product.name} hover`}
             className="absolute inset-0 h-full w-full object-contain p-3 opacity-0 transition duration-500 ease-out md:group-hover/card:scale-105 md:group-hover/card:opacity-100"
           />
         </Link>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
-        {!canAddToCart ? (
-          <span className="absolute left-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-lg">
-            {stockLabel}
-          </span>
-        ) : discount > 0 ? (
-          <span className="absolute left-3 top-3 rounded-full bg-orange-500 px-3 py-1 text-xs font-bold text-white shadow-lg">
-            -{discount}%
-          </span>
-        ) : null}
+        <div className="absolute left-3 top-3 flex flex-col gap-2">
+          {!canAddToCart ? (
+            <span className="w-fit rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-lg">
+              {stockLabel}
+            </span>
+          ) : discount > 0 ? (
+            <span className="w-fit rounded-full bg-orange-500 px-3 py-1 text-xs font-bold text-white shadow-lg">
+              -{discount}%
+            </span>
+          ) : null}
+
+          {badges.map((badge) => (
+            <span
+              key={badge}
+              className="w-fit rounded-full border border-orange-400/30 bg-black/65 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-orange-300 backdrop-blur"
+            >
+              {badge}
+            </span>
+          ))}
+        </div>
 
         <button
           type="button"
@@ -289,9 +300,17 @@ const ProductCard = ({
       <div className="relative bg-black/60 px-4 pb-5 pt-4 backdrop-blur-xl">
         <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-orange-400">
-          {product.brand?.name || "Digital Xpress"}
-        </p>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <p className="truncate text-xs font-semibold uppercase tracking-wide text-orange-400">
+            {product.brand?.name || "Digital Xpress"}
+          </p>
+
+          {product.sku && (
+            <span className="shrink-0 rounded-full bg-white/5 px-2 py-1 text-[10px] font-semibold text-gray-400">
+              SKU {product.sku}
+            </span>
+          )}
+        </div>
 
         <Link href={productHref}>
           <h2 className="line-clamp-2 min-h-[48px] text-xl font-semibold leading-6 text-gray-200 transition hover:text-orange-500">
@@ -302,6 +321,7 @@ const ProductCard = ({
         <p className="mt-1 line-clamp-1 text-xs text-gray-500">
           {product.category?.name}
           {product.subCategory?.name ? ` | ${product.subCategory.name}` : ""}
+          {product.modelName ? ` | ${product.modelName}` : ""}
         </p>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -327,6 +347,15 @@ const ProductCard = ({
             {stockLabel}
           </span>
         </div>
+
+        {/* Rating display */}
+        {product.averageRating && product.averageRating > 0 && (
+          <div className="mt-2 flex items-center gap-1 text-xs text-yellow-400">
+            <span>★</span>
+            <span>{Number(product.averageRating).toFixed(1)}</span>
+            <span className="text-gray-500">({product.totalReviews || 0})</span>
+          </div>
+        )}
       </div>
     </motion.article>
   );
