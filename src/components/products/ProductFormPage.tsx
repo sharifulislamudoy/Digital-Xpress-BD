@@ -1,6 +1,8 @@
+// src/components/products/ProductFormPage.tsx
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -9,7 +11,7 @@ import type {
   Product,
   ProductBrand,
   ProductCategory,
-  ProfitType,
+  ProductType,
   StockStatus,
 } from "@/types/product";
 import { formatPrice } from "@/lib/formatPrice";
@@ -23,7 +25,122 @@ interface ProductFormPageProps {
 type RelationMode = "existing" | "new";
 type SubCategoryMode = "none" | "existing" | "new";
 
+type ProductFormState = {
+  name: string;
+  slug: string;
+  productType: ProductType;
+
+  sku: string;
+  productCode: string;
+  barcode: string;
+  modelName: string;
+
+  shortDescription: string;
+  description: string;
+
+  keyFeatures: string;
+  highlights: string;
+  specifications: string;
+  tags: string;
+  searchKeywords: string;
+
+  mrp: string;
+  costPrice: string;
+  sellingPrice: string;
+
+  stock: string;
+  stockStatus: StockStatus;
+  lowStockAlertQuantity: string;
+  soldQuantity: string;
+  reservedQuantity: string;
+
+  inStock: boolean;
+  isPublished: boolean;
+  isFeatured: boolean;
+  isNewArrival: boolean;
+  isBestSeller: boolean;
+  isTrending: boolean;
+  isRecommended: boolean;
+  isFlashSale: boolean;
+
+  mainImageAlt: string;
+  hoverImageAlt: string;
+  extraImagesAlt: string;
+
+  warrantyDuration: string;
+  warrantyDetails: string;
+  returnPolicy: string;
+  replacementPolicy: string;
+  refundPolicy: string;
+
+  deliveryInfo: string;
+  deliveryCharge: string;
+  insideDhakaDeliveryCharge: string;
+  outsideDhakaDeliveryCharge: string;
+  deliveryTime: string;
+  cashOnDelivery: boolean;
+  freeDelivery: boolean;
+  freeDeliveryMinAmount: string;
+
+  packageIncludes: string;
+  packageWeight: string;
+  packageDimensions: string;
+
+  supplierName: string;
+  supplierPhone: string;
+  supplierEmail: string;
+  supplierAddress: string;
+  supplierInvoiceNumber: string;
+  internalNote: string;
+
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
+  focusKeyword: string;
+  canonicalUrl: string;
+
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+
+  metaRobots: string;
+  schemaJson: string;
+
+  viewCount: string;
+  wishlistCount: string;
+  cartCount: string;
+  orderCount: string;
+  averageRating: string;
+  totalReviews: string;
+
+  publishedAt: string;
+
+  sizeChartName: string;
+  sizeChartTitle: string;
+  sizeChartDescription: string;
+  sizeChartUnit: string;
+  sizeChartData: string;
+  sizeChartNote: string;
+  sizeChartIsActive: boolean;
+  sizeChartSortOrder: string;
+  removeSizeChart: boolean;
+  removeSizeChartImage: boolean;
+  removeHoverImage: boolean;
+  removeVideo: boolean;
+};
+
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+const inputClass =
+  "w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500";
+const textareaClass = `${inputClass} min-h-[110px] resize-y`;
+const labelClass = "mb-2 block text-sm font-medium text-gray-300";
+
+const productTypeOptions: { value: ProductType; label: string }[] = [
+  { value: "single", label: "Single Product" },
+  { value: "combo", label: "Combo Product" },
+];
+
 
 const stockStatusOptions: { value: StockStatus; label: string }[] = [
   { value: "IN_STOCK", label: "In stock" },
@@ -34,22 +151,477 @@ const stockStatusOptions: { value: StockStatus; label: string }[] = [
   { value: "COMING_SOON", label: "Coming soon" },
 ];
 
-function numberValue(value: string) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+const defaultForm: ProductFormState = {
+  name: "",
+  slug: "",
+  productType: "single",
+
+  sku: "",
+  productCode: "",
+  barcode: "",
+  modelName: "",
+
+  shortDescription: "",
+  description: "",
+
+  keyFeatures: "",
+  highlights: "",
+  specifications: "",
+  tags: "",
+  searchKeywords: "",
+
+  mrp: "",
+  costPrice: "",
+  sellingPrice: "",
+
+  stock: "0",
+  stockStatus: "IN_STOCK",
+  lowStockAlertQuantity: "5",
+  soldQuantity: "0",
+  reservedQuantity: "0",
+
+  inStock: true,
+  isPublished: true,
+  isFeatured: false,
+  isNewArrival: false,
+  isBestSeller: false,
+  isTrending: false,
+  isRecommended: false,
+  isFlashSale: false,
+
+  mainImageAlt: "",
+  hoverImageAlt: "",
+  extraImagesAlt: "",
+
+  warrantyDuration: "",
+  warrantyDetails: "",
+  returnPolicy: "",
+  replacementPolicy: "",
+  refundPolicy: "",
+
+  deliveryInfo: "",
+  deliveryCharge: "",
+  insideDhakaDeliveryCharge: "",
+  outsideDhakaDeliveryCharge: "",
+  deliveryTime: "",
+  cashOnDelivery: true,
+  freeDelivery: false,
+  freeDeliveryMinAmount: "",
+
+  packageIncludes: "",
+  packageWeight: "",
+  packageDimensions: "",
+
+  supplierName: "",
+  supplierPhone: "",
+  supplierEmail: "",
+  supplierAddress: "",
+  supplierInvoiceNumber: "",
+  internalNote: "",
+
+  seoTitle: "",
+  seoDescription: "",
+  seoKeywords: "",
+  focusKeyword: "",
+  canonicalUrl: "",
+
+  ogTitle: "",
+  ogDescription: "",
+  ogImage: "",
+
+  metaRobots: "index,follow",
+  schemaJson: "",
+
+  viewCount: "0",
+  wishlistCount: "0",
+  cartCount: "0",
+  orderCount: "0",
+  averageRating: "0",
+  totalReviews: "0",
+
+  publishedAt: "",
+
+  sizeChartName: "",
+  sizeChartTitle: "",
+  sizeChartDescription: "",
+  sizeChartUnit: "inch",
+  sizeChartData: "",
+  sizeChartNote: "",
+  sizeChartIsActive: true,
+  sizeChartSortOrder: "0",
+  removeSizeChart: false,
+  removeSizeChartImage: false,
+  removeHoverImage: false,
+  removeVideo: false,
+};
+
+const stringFields: Array<keyof ProductFormState> = [
+  "name",
+  "slug",
+  "productType",
+  "sku",
+  "productCode",
+  "barcode",
+  "modelName",
+  "shortDescription",
+  "description",
+  "keyFeatures",
+  "highlights",
+  "specifications",
+  "tags",
+  "searchKeywords",
+  "mrp",
+  "costPrice",
+  "sellingPrice",
+  "stock",
+  "stockStatus",
+  "lowStockAlertQuantity",
+  "soldQuantity",
+  "reservedQuantity",
+  "mainImageAlt",
+  "hoverImageAlt",
+  "extraImagesAlt",
+  "warrantyDuration",
+  "warrantyDetails",
+  "returnPolicy",
+  "replacementPolicy",
+  "refundPolicy",
+  "deliveryInfo",
+  "deliveryCharge",
+  "insideDhakaDeliveryCharge",
+  "outsideDhakaDeliveryCharge",
+  "deliveryTime",
+  "freeDeliveryMinAmount",
+  "packageIncludes",
+  "packageWeight",
+  "packageDimensions",
+  "supplierName",
+  "supplierPhone",
+  "supplierEmail",
+  "supplierAddress",
+  "supplierInvoiceNumber",
+  "internalNote",
+  "seoTitle",
+  "seoDescription",
+  "seoKeywords",
+  "focusKeyword",
+  "canonicalUrl",
+  "ogTitle",
+  "ogDescription",
+  "ogImage",
+  "metaRobots",
+  "schemaJson",
+  "viewCount",
+  "wishlistCount",
+  "cartCount",
+  "orderCount",
+  "averageRating",
+  "totalReviews",
+  "publishedAt",
+  "sizeChartName",
+  "sizeChartTitle",
+  "sizeChartDescription",
+  "sizeChartUnit",
+  "sizeChartData",
+  "sizeChartNote",
+  "sizeChartSortOrder",
+];
+
+const booleanFields: Array<keyof ProductFormState> = [
+  "inStock",
+  "isPublished",
+  "isFeatured",
+  "isNewArrival",
+  "isBestSeller",
+  "isTrending",
+  "isRecommended",
+  "isFlashSale",
+  "cashOnDelivery",
+  "freeDelivery",
+  "sizeChartIsActive",
+  "removeSizeChart",
+  "removeSizeChartImage",
+  "removeHoverImage",
+  "removeVideo",
+];
+
+function numberText(value: unknown) {
+  if (value === null || value === undefined) return "";
+  return String(value);
 }
 
-export default function ProductFormPage({
-  mode,
-  panelType,
-  productId,
-}: ProductFormPageProps) {
+function listText(value?: string[]) {
+  return Array.isArray(value) ? value.join(", ") : "";
+}
+
+function jsonText(value: unknown) {
+  if (value === null || value === undefined) return "";
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return "";
+  }
+}
+
+function datetimeLocal(value?: string | null) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60 * 1000);
+
+  return local.toISOString().slice(0, 16);
+}
+
+
+function formFromProduct(product: Product): ProductFormState {
+  return {
+    ...defaultForm,
+    name: product.name || "",
+    slug: product.slug || "",
+    productType: product.productType || "single",
+
+    sku: product.sku || "",
+    productCode: product.productCode || "",
+    barcode: product.barcode || "",
+    modelName: product.modelName || "",
+
+    shortDescription: product.shortDescription || "",
+    description: product.description || "",
+
+    keyFeatures: listText(product.keyFeatures),
+    highlights: listText(product.highlights),
+    specifications: jsonText(product.specifications),
+    tags: listText(product.tags),
+    searchKeywords: listText(product.searchKeywords),
+
+    mrp: numberText(product.mrp),
+    costPrice: numberText(product.costPrice),
+    sellingPrice: numberText(product.sellingPrice),
+
+    stock: numberText(product.stock ?? 0),
+    stockStatus: product.stockStatus || "IN_STOCK",
+    lowStockAlertQuantity: numberText(product.lowStockAlertQuantity ?? 5),
+    soldQuantity: numberText(product.soldQuantity ?? 0),
+    reservedQuantity: numberText(product.reservedQuantity ?? 0),
+
+    inStock: product.inStock ?? true,
+    isPublished: product.isPublished ?? true,
+    isFeatured: product.isFeatured ?? false,
+    isNewArrival: product.isNewArrival ?? false,
+    isBestSeller: product.isBestSeller ?? false,
+    isTrending: product.isTrending ?? false,
+    isRecommended: product.isRecommended ?? false,
+    isFlashSale: product.isFlashSale ?? false,
+
+    mainImageAlt: product.mainImageAlt || "",
+    hoverImageAlt: product.hoverImageAlt || "",
+    extraImagesAlt: product.name || "",
+
+    warrantyDuration: product.warrantyDuration || "",
+    warrantyDetails: product.warrantyDetails || "",
+    returnPolicy: product.returnPolicy || "",
+    replacementPolicy: product.replacementPolicy || "",
+    refundPolicy: product.refundPolicy || "",
+
+    deliveryInfo: product.deliveryInfo || "",
+    deliveryCharge: numberText(product.deliveryCharge),
+    insideDhakaDeliveryCharge: numberText(product.insideDhakaDeliveryCharge),
+    outsideDhakaDeliveryCharge: numberText(product.outsideDhakaDeliveryCharge),
+    deliveryTime: product.deliveryTime || "",
+    cashOnDelivery: product.cashOnDelivery ?? true,
+    freeDelivery: product.freeDelivery ?? false,
+    freeDeliveryMinAmount: numberText(product.freeDeliveryMinAmount),
+
+    packageIncludes: listText(product.packageIncludes),
+    packageWeight: product.packageWeight || "",
+    packageDimensions: product.packageDimensions || "",
+
+    supplierName: product.supplierName || "",
+    supplierPhone: product.supplierPhone || "",
+    supplierEmail: product.supplierEmail || "",
+    supplierAddress: product.supplierAddress || "",
+    supplierInvoiceNumber: product.supplierInvoiceNumber || "",
+    internalNote: product.internalNote || "",
+
+    seoTitle: product.seoTitle || "",
+    seoDescription: product.seoDescription || "",
+    seoKeywords: listText(product.seoKeywords),
+    focusKeyword: product.focusKeyword || "",
+    canonicalUrl: product.canonicalUrl || "",
+
+    ogTitle: product.ogTitle || "",
+    ogDescription: product.ogDescription || "",
+    ogImage: product.ogImage || "",
+
+    metaRobots: product.metaRobots || "index,follow",
+    schemaJson: jsonText(product.schemaJson),
+
+    viewCount: numberText(product.viewCount ?? 0),
+    wishlistCount: numberText(product.wishlistCount ?? 0),
+    cartCount: numberText(product.cartCount ?? 0),
+    orderCount: numberText(product.orderCount ?? 0),
+    averageRating: numberText(product.averageRating ?? 0),
+    totalReviews: numberText(product.totalReviews ?? 0),
+
+    publishedAt: datetimeLocal(product.publishedAt),
+
+    sizeChartName: product.sizeChart?.name || "",
+    sizeChartTitle: product.sizeChart?.title || "",
+    sizeChartDescription: product.sizeChart?.description || "",
+    sizeChartUnit: product.sizeChart?.unit || "inch",
+    sizeChartData: jsonText(product.sizeChart?.chartData),
+    sizeChartNote: product.sizeChart?.note || "",
+    sizeChartIsActive: product.sizeChart?.isActive ?? true,
+    sizeChartSortOrder: numberText(product.sizeChart?.sortOrder ?? 0),
+    removeSizeChart: false,
+    removeSizeChartImage: false,
+    removeHoverImage: false,
+    removeVideo: false,
+  };
+}
+
+function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-gray-800 bg-black p-4">
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-orange-400">{title}</h3>
+        {note && <p className="mt-1 text-xs text-gray-500">{note}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required,
+  readOnly,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  readOnly?: boolean;
+}) {
+  return (
+    <div>
+      <label className={labelClass}>{label}{required ? " *" : ""}</label>
+      <input
+        type={type}
+        value={value}
+        readOnly={readOnly}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className={`${inputClass} ${readOnly ? "cursor-not-allowed bg-gray-950 text-gray-500" : ""}`}
+      />
+    </div>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+  required,
+  mono,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+  required?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div>
+      <label className={labelClass}>{label}{required ? " *" : ""}</label>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className={`${textareaClass} ${mono ? "font-mono text-xs" : ""}`}
+      />
+    </div>
+  );
+}
+
+function SelectField<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div>
+      <label className={labelClass}>{label}</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as T)}
+        className={inputClass}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SwitchField({
+  label,
+  checked,
+  onChange,
+  note,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  note?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between rounded-xl border border-gray-800 bg-gray-950 px-4 py-3 text-left transition hover:border-orange-500/70"
+    >
+      <span>
+        <span className="block text-sm font-medium text-gray-200">{label}</span>
+        {note && <span className="mt-1 block text-xs text-gray-500">{note}</span>}
+      </span>
+      <span className={`relative h-7 w-12 rounded-full transition ${checked ? "bg-orange-500" : "bg-gray-700"}`}>
+        <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${checked ? "left-6" : "left-1"}`} />
+      </span>
+    </button>
+  );
+}
+
+export default function ProductFormPage({ mode, panelType, productId }: ProductFormPageProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const accessToken = (session?.user as any)?.accessToken;
 
   const isEdit = mode === "edit";
-  const isAdmin = panelType === "admin";
   const listHref = panelType === "admin" ? "/admin/products" : "/moderator/products";
 
   const [loading, setLoading] = useState(true);
@@ -57,18 +629,8 @@ export default function ProductFormPage({
 
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [brands, setBrands] = useState<ProductBrand[]>([]);
-  const [initialData, setInitialData] = useState<Product | null>(null);
+  const [initialProduct, setInitialProduct] = useState<Product | null>(null);
 
-  // Basic fields
-  const [name, setName] = useState("");
-  const [modelName, setModelName] = useState("");
-  const [shortDescription, setShortDescription] = useState("");
-  const [description, setDescription] = useState("");
-  const [sku, setSku] = useState(""); // read‑only
-  const [productCode, setProductCode] = useState("");
-  const [barcode, setBarcode] = useState("");
-
-  // Relations
   const [categoryMode, setCategoryMode] = useState<RelationMode>("existing");
   const [categoryId, setCategoryId] = useState("");
   const [categoryName, setCategoryName] = useState("");
@@ -81,95 +643,37 @@ export default function ProductFormPage({
   const [brandId, setBrandId] = useState("");
   const [brandName, setBrandName] = useState("");
 
-  // Pricing
-  const [mrp, setMrp] = useState("");
-  const [costPrice, setCostPrice] = useState("");
-  const [profitType, setProfitType] = useState<ProfitType>("PERCENTAGE");
-  const [profitValue, setProfitValue] = useState("");
+  const [form, setForm] = useState<ProductFormState>(defaultForm);
 
-  // Stock
-  const [stock, setStock] = useState("0");
-  const [stockStatus, setStockStatus] = useState<StockStatus>("IN_STOCK");
-  const [lowStockAlertQuantity, setLowStockAlertQuantity] = useState("5");
-
-  // Additional attributes
-  const [keyFeatures, setKeyFeatures] = useState<string[]>([]);
-  const [keyFeaturesInput, setKeyFeaturesInput] = useState("");
-  const [highlights, setHighlights] = useState<string[]>([]);
-  const [highlightsInput, setHighlightsInput] = useState("");
-  const [specifications, setSpecifications] = useState<string>("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagsInput, setTagsInput] = useState("");
-  const [searchKeywords, setSearchKeywords] = useState<string[]>([]);
-  const [searchKeywordsInput, setSearchKeywordsInput] = useState("");
-
-  // Delivery & Policy
-  const [warrantyDuration, setWarrantyDuration] = useState("");
-  const [warrantyDetails, setWarrantyDetails] = useState("");
-  const [returnPolicy, setReturnPolicy] = useState("");
-  const [replacementPolicy, setReplacementPolicy] = useState("");
-  const [refundPolicy, setRefundPolicy] = useState("");
-  const [deliveryInfo, setDeliveryInfo] = useState("");
-  const [deliveryCharge, setDeliveryCharge] = useState("");
-  const [insideDhakaDeliveryCharge, setInsideDhakaDeliveryCharge] = useState("");
-  const [outsideDhakaDeliveryCharge, setOutsideDhakaDeliveryCharge] = useState("");
-  const [deliveryTime, setDeliveryTime] = useState("");
-  const [cashOnDelivery, setCashOnDelivery] = useState(true);
-  const [freeDelivery, setFreeDelivery] = useState(false);
-  const [freeDeliveryMinAmount, setFreeDeliveryMinAmount] = useState("");
-  const [packageIncludes, setPackageIncludes] = useState<string[]>([]);
-  const [packageIncludesInput, setPackageIncludesInput] = useState("");
-  const [packageWeight, setPackageWeight] = useState("");
-  const [packageDimensions, setPackageDimensions] = useState("");
-
-  // Supplier
-  const [supplierName, setSupplierName] = useState("");
-  const [supplierPhone, setSupplierPhone] = useState("");
-  const [supplierEmail, setSupplierEmail] = useState("");
-  const [supplierAddress, setSupplierAddress] = useState("");
-  const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState("");
-  const [internalNote, setInternalNote] = useState("");
-
-  // SEO
-  const [seoTitle, setSeoTitle] = useState("");
-  const [seoDescription, setSeoDescription] = useState("");
-  const [seoKeywords, setSeoKeywords] = useState<string[]>([]);
-  const [seoKeywordsInput, setSeoKeywordsInput] = useState("");
-  const [focusKeyword, setFocusKeyword] = useState("");
-  const [canonicalUrl, setCanonicalUrl] = useState("");
-  const [ogTitle, setOgTitle] = useState("");
-  const [ogDescription, setOgDescription] = useState("");
-  const [ogImage, setOgImage] = useState("");
-  const [metaRobots, setMetaRobots] = useState("index,follow");
-  const [schemaJson, setSchemaJson] = useState("");
-
-  // Publishing
-  const [isPublished, setIsPublished] = useState(true);
-
-  // Images
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [hoverImage, setHoverImage] = useState<File | null>(null);
   const [video, setVideo] = useState<File | null>(null);
+  const [sizeChartImage, setSizeChartImage] = useState<File | null>(null);
   const [extraImages, setExtraImages] = useState<File[]>([]);
+  const extraImagesInputRef = useRef<HTMLInputElement | null>(null);
 
   const [mainPreview, setMainPreview] = useState("");
   const [hoverPreview, setHoverPreview] = useState("");
   const [videoPreview, setVideoPreview] = useState("");
+  const [sizeChartPreview, setSizeChartPreview] = useState("");
   const [removedExtraImageIds, setRemovedExtraImageIds] = useState<string[]>([]);
 
-  const authHeaders = useMemo(() => ({
-    Authorization: `Bearer ${accessToken}`,
-  }), [accessToken]);
+  const authHeaders = useMemo(
+    () => ({
+      Authorization: `Bearer ${accessToken}`,
+    }),
+    [accessToken]
+  );
 
   const subCategories = useMemo(() => {
-    return categories.find((c) => c.id === categoryId)?.subCategories || [];
+    return categories.find((category) => category.id === categoryId)?.subCategories || [];
   }, [categories, categoryId]);
 
-  const calculatedSellingPrice = useMemo(() => {
-    const cost = numberValue(costPrice);
-    const profit = numberValue(profitValue);
-    return profitType === "FIXED" ? cost + profit : cost + (cost * profit) / 100;
-  }, [costPrice, profitValue, profitType]);
+  const sellingPricePreview = useMemo(() => Number(form.sellingPrice) || 0, [form.sellingPrice]);
+
+  const setField = <K extends keyof ProductFormState>(field: K, value: ProductFormState[K]) => {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -180,12 +684,7 @@ export default function ProductFormPage({
   useEffect(() => {
     if (status === "loading") return;
 
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    }
-
-    const loadData = async () => {
+    const load = async () => {
       try {
         if (!API_BASE) {
           toast.error("NEXT_PUBLIC_BACKEND_URL is missing");
@@ -195,30 +694,34 @@ export default function ProductFormPage({
 
         setLoading(true);
 
-        const metaRes = await fetch(`${API_BASE}/api/v1/products/meta`, {
+        const metaResponse = await fetch(`${API_BASE}/api/v1/products/meta`, {
           cache: "no-store",
         });
-        const metaData = await metaRes.json();
+        const metaData = await metaResponse.json();
 
-        const loadedCategories: ProductCategory[] = metaData.success ? metaData.categories || [] : [];
-        const loadedBrands: ProductBrand[] = metaData.success ? metaData.brands || [] : [];
+        if (!metaResponse.ok || !metaData.success) {
+          toast.error(metaData.message || "Failed to load product meta");
+          setLoading(false);
+          return;
+        }
+
+        const loadedCategories: ProductCategory[] = metaData.categories || [];
+        const loadedBrands: ProductBrand[] = metaData.brands || [];
 
         setCategories(loadedCategories);
         setBrands(loadedBrands);
 
         if (loadedCategories.length > 0) {
-          setCategoryId(loadedCategories[0].id);
           setCategoryMode("existing");
+          setCategoryId(loadedCategories[0].id);
         } else {
-          setCategoryId("");
           setCategoryMode("new");
         }
 
         if (loadedBrands.length > 0) {
-          setBrandId(loadedBrands[0].id);
           setBrandMode("existing");
+          setBrandId(loadedBrands[0].id);
         } else {
-          setBrandId("");
           setBrandMode("new");
         }
 
@@ -229,100 +732,38 @@ export default function ProductFormPage({
             return;
           }
 
-          const productRes = await fetch(`${API_BASE}/api/v1/products/admin/${productId}`, {
+          if (!accessToken) {
+            setLoading(false);
+            return;
+          }
+
+          const productResponse = await fetch(`${API_BASE}/api/v1/products/admin/${productId}`, {
             headers: authHeaders,
             cache: "no-store",
           });
-          const productData = await productRes.json();
+          const productData = await productResponse.json();
 
-          if (!productRes.ok || !productData.success) {
+          if (!productResponse.ok || !productData.success) {
             toast.error(productData.message || "Failed to load product");
             router.push(listHref);
             return;
           }
 
           const product: Product = productData.product;
-          setInitialData(product);
 
-          // Populate all fields
-          setName(product.name || "");
-          setModelName(product.modelName || "");
-          setShortDescription(product.shortDescription || "");
-          setDescription(product.description || "");
-          setSku(product.sku || "");
-          setProductCode(product.productCode || "");
-          setBarcode(product.barcode || "");
-
+          setInitialProduct(product);
+          setForm(formFromProduct(product));
           setCategoryMode("existing");
-          setCategoryId(product.category?.id || loadedCategories[0]?.id || "");
-
+          setCategoryId(product.category?.id || product.categoryId || loadedCategories[0]?.id || "");
           setSubCategoryMode(product.subCategory?.id ? "existing" : "none");
-          setSubCategoryId(product.subCategory?.id || "");
-
+          setSubCategoryId(product.subCategory?.id || product.subCategoryId || "");
           setBrandMode("existing");
-          setBrandId(product.brand?.id || loadedBrands[0]?.id || "");
-
-          setMrp(product.mrp?.toString() || "");
-          setCostPrice(product.costPrice?.toString() || "");
-          setProfitType(product.profitType || "PERCENTAGE");
-          setProfitValue(product.profitValue?.toString() || "");
-
-          setStock(typeof product.stock === "number" ? product.stock.toString() : "0");
-          setStockStatus(product.stockStatus || "IN_STOCK");
-          setLowStockAlertQuantity(product.lowStockAlertQuantity?.toString() || "5");
-
-          setKeyFeatures(product.keyFeatures || []);
-          setKeyFeaturesInput((product.keyFeatures || []).join(", "));
-          setHighlights(product.highlights || []);
-          setHighlightsInput((product.highlights || []).join(", "));
-          setSpecifications(product.specifications ? JSON.stringify(product.specifications, null, 2) : "");
-          setTags(product.tags || []);
-          setTagsInput((product.tags || []).join(", "));
-          setSearchKeywords(product.searchKeywords || []);
-          setSearchKeywordsInput((product.searchKeywords || []).join(", "));
-
-          setWarrantyDuration(product.warrantyDuration || "");
-          setWarrantyDetails(product.warrantyDetails || "");
-          setReturnPolicy(product.returnPolicy || "");
-          setReplacementPolicy(product.replacementPolicy || "");
-          setRefundPolicy(product.refundPolicy || "");
-          setDeliveryInfo(product.deliveryInfo || "");
-          setDeliveryCharge(product.deliveryCharge?.toString() || "");
-          setInsideDhakaDeliveryCharge(product.insideDhakaDeliveryCharge?.toString() || "");
-          setOutsideDhakaDeliveryCharge(product.outsideDhakaDeliveryCharge?.toString() || "");
-          setDeliveryTime(product.deliveryTime || "");
-          setCashOnDelivery(product.cashOnDelivery ?? true);
-          setFreeDelivery(product.freeDelivery ?? false);
-          setFreeDeliveryMinAmount(product.freeDeliveryMinAmount?.toString() || "");
-          setPackageIncludes(product.packageIncludes || []);
-          setPackageIncludesInput((product.packageIncludes || []).join(", "));
-          setPackageWeight(product.packageWeight || "");
-          setPackageDimensions(product.packageDimensions || "");
-
-          setSupplierName(product.supplierName || "");
-          setSupplierPhone(product.supplierPhone || "");
-          setSupplierEmail(product.supplierEmail || "");
-          setSupplierAddress(product.supplierAddress || "");
-          setSupplierInvoiceNumber(product.supplierInvoiceNumber || "");
-          setInternalNote(product.internalNote || "");
-
-          setSeoTitle(product.seoTitle || "");
-          setSeoDescription(product.seoDescription || "");
-          setSeoKeywords(product.seoKeywords || []);
-          setSeoKeywordsInput((product.seoKeywords || []).join(", "));
-          setFocusKeyword(product.focusKeyword || "");
-          setCanonicalUrl(product.canonicalUrl || "");
-          setOgTitle(product.ogTitle || "");
-          setOgDescription(product.ogDescription || "");
-          setOgImage(product.ogImage || "");
-          setMetaRobots(product.metaRobots || "index,follow");
-          setSchemaJson(product.schemaJson ? JSON.stringify(product.schemaJson, null, 2) : "");
-
-          setIsPublished(product.isPublished ?? true);
+          setBrandId(product.brand?.id || product.brandId || loadedBrands[0]?.id || "");
 
           setMainPreview(product.mainImageUrl || "");
           setHoverPreview(product.hoverImageUrl || "");
           setVideoPreview(product.videoUrl || "");
+          setSizeChartPreview(product.sizeChart?.imageUrl || "");
         }
       } catch (error) {
         console.error(error);
@@ -332,7 +773,7 @@ export default function ProductFormPage({
       }
     };
 
-    loadData();
+    load();
   }, [accessToken, authHeaders, isEdit, listHref, productId, router, status]);
 
   useEffect(() => {
@@ -348,75 +789,131 @@ export default function ProductFormPage({
     }
   }, [subCategories, subCategoryId]);
 
-  const handleFilePreview = (
-    file: File | null,
+  function updateFilePreview(
+    event: ChangeEvent<HTMLInputElement>,
     setter: (file: File | null) => void,
     previewSetter: (url: string) => void,
     fallback = ""
-  ) => {
+  ) {
+    const file = event.target.files?.[0] || null;
     setter(file);
     previewSetter(file ? URL.createObjectURL(file) : fallback);
-  };
+  }
 
-  const handleExtraImagesChange = (files: FileList | null) => {
-    if (!files) return;
-    setExtraImages((prev) => [...prev, ...Array.from(files)]);
-  };
+  function getFileKey(file: File) {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }
 
-  const removeNewExtraImage = (index: number) => {
-    setExtraImages((prev) => prev.filter((_, i) => i !== index));
-  };
+  function handleExtraImagesChange(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.currentTarget.files || []);
 
-  const toggleRemoveExtraImage = (id: string) => {
-    setRemovedExtraImageIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    if (selectedFiles.length === 0) {
+      event.currentTarget.value = "";
+      return;
+    }
+
+    const imageFiles = selectedFiles.filter((file) => file.type.startsWith("image/"));
+
+    if (imageFiles.length === 0) {
+      toast.error("Please select image files only");
+      event.currentTarget.value = "";
+      return;
+    }
+
+    setExtraImages((previous) => {
+      const previousKeys = new Set(previous.map(getFileKey));
+      const uniqueNewFiles = imageFiles.filter((file) => !previousKeys.has(getFileKey(file)));
+
+      if (uniqueNewFiles.length === 0) {
+        toast.error("Selected image already added");
+        return previous;
+      }
+
+      toast.success(`${uniqueNewFiles.length} extra image${uniqueNewFiles.length > 1 ? "s" : ""} added`);
+      return [...previous, ...uniqueNewFiles];
+    });
+
+    event.currentTarget.value = "";
+  }
+
+  function removeNewExtraImage(index: number) {
+    setExtraImages((previous) => previous.filter((_, currentIndex) => currentIndex !== index));
+  }
+
+  function toggleRemoveExistingExtraImage(id: string) {
+    setRemovedExtraImageIds((previous) =>
+      previous.includes(id)
+        ? previous.filter((item) => item !== id)
+        : [...previous, id]
     );
-  };
+  }
 
-  const validateForm = () => {
-    if (!name.trim()) {
+  function validateForm() {
+    if (!form.name.trim()) {
       toast.error("Product name is required");
       return false;
     }
-    if (!description.trim()) {
+
+    if (!form.description.trim()) {
       toast.error("Description is required");
       return false;
     }
+
     if (categoryMode === "existing" && !categoryId) {
       toast.error("Select a category");
       return false;
     }
+
     if (categoryMode === "new" && !categoryName.trim()) {
       toast.error("Type new category name");
       return false;
     }
+
     if (brandMode === "existing" && !brandId) {
       toast.error("Select a brand");
       return false;
     }
+
     if (brandMode === "new" && !brandName.trim()) {
       toast.error("Type new brand name");
       return false;
     }
+
     if (subCategoryMode === "existing" && !subCategoryId) {
       toast.error("Select a sub-category");
       return false;
     }
+
     if (subCategoryMode === "new" && !subCategoryName.trim()) {
       toast.error("Type new sub-category name");
       return false;
     }
+
+    if (!form.mrp.trim()) {
+      toast.error("MRP is required");
+      return false;
+    }
+
+    if (!form.sellingPrice.trim()) {
+      toast.error("Selling price is required");
+      return false;
+    }
+
     if (!isEdit && !mainImage) {
       toast.error("Main image is required");
       return false;
     }
+
     return true;
-  };
+  }
 
-  const handleSubmit = async () => {
-    if (!validateForm() || !accessToken) return;
+  async function handleSubmit() {
+    if (!validateForm()) return;
 
-    setSubmitting(true);
+    if (!accessToken) {
+      toast.error("Please login again");
+      return;
+    }
 
     try {
       if (!API_BASE) {
@@ -424,17 +921,18 @@ export default function ProductFormPage({
         return;
       }
 
+      setSubmitting(true);
+
       const formData = new FormData();
 
-      // Basic fields
-      formData.append("name", name.trim());
-      formData.append("modelName", modelName.trim());
-      formData.append("shortDescription", shortDescription.trim());
-      formData.append("description", description.trim());
-      formData.append("productCode", productCode.trim());
-      formData.append("barcode", barcode.trim());
+      for (const key of stringFields) {
+        formData.append(key, String(form[key] ?? ""));
+      }
 
-      // Relations
+      for (const key of booleanFields) {
+        formData.append(key, String(Boolean(form[key])));
+      }
+
       if (categoryMode === "existing") {
         formData.append("categoryId", categoryId);
       } else {
@@ -443,7 +941,9 @@ export default function ProductFormPage({
 
       if (subCategoryMode === "existing") {
         formData.append("subCategoryId", subCategoryId);
-      } else if (subCategoryMode === "new") {
+      }
+
+      if (subCategoryMode === "new") {
         formData.append("subCategoryName", subCategoryName.trim());
       }
 
@@ -453,93 +953,33 @@ export default function ProductFormPage({
         formData.append("brandName", brandName.trim());
       }
 
-      // Pricing
-      formData.append("mrp", mrp || "0");
-      formData.append("costPrice", costPrice || "0");
-      formData.append("profitType", profitType);
-      formData.append("profitValue", profitValue || "0");
-
-      // Stock
-      if (isAdmin) {
-        formData.append("stock", stock || "0");
-      }
-      formData.append("stockStatus", stockStatus);
-      formData.append("lowStockAlertQuantity", lowStockAlertQuantity || "5");
-
-      // Additional attributes (arrays as JSON or comma-separated)
-      // We'll send as JSON array strings
-      formData.append("keyFeatures", JSON.stringify(keyFeatures));
-      formData.append("highlights", JSON.stringify(highlights));
-      formData.append("tags", JSON.stringify(tags));
-      formData.append("searchKeywords", JSON.stringify(searchKeywords));
-      formData.append("specifications", specifications.trim() || "null");
-
-      // Delivery & Policy
-      formData.append("warrantyDuration", warrantyDuration.trim());
-      formData.append("warrantyDetails", warrantyDetails.trim());
-      formData.append("returnPolicy", returnPolicy.trim());
-      formData.append("replacementPolicy", replacementPolicy.trim());
-      formData.append("refundPolicy", refundPolicy.trim());
-      formData.append("deliveryInfo", deliveryInfo.trim());
-      formData.append("deliveryCharge", deliveryCharge || "0");
-      formData.append("insideDhakaDeliveryCharge", insideDhakaDeliveryCharge || "0");
-      formData.append("outsideDhakaDeliveryCharge", outsideDhakaDeliveryCharge || "0");
-      formData.append("deliveryTime", deliveryTime.trim());
-      formData.append("cashOnDelivery", String(cashOnDelivery));
-      formData.append("freeDelivery", String(freeDelivery));
-      formData.append("freeDeliveryMinAmount", freeDeliveryMinAmount || "0");
-      formData.append("packageIncludes", JSON.stringify(packageIncludes));
-      formData.append("packageWeight", packageWeight.trim());
-      formData.append("packageDimensions", packageDimensions.trim());
-
-      // Supplier
-      formData.append("supplierName", supplierName.trim());
-      formData.append("supplierPhone", supplierPhone.trim());
-      formData.append("supplierEmail", supplierEmail.trim());
-      formData.append("supplierAddress", supplierAddress.trim());
-      formData.append("supplierInvoiceNumber", supplierInvoiceNumber.trim());
-      formData.append("internalNote", internalNote.trim());
-
-      // SEO
-      formData.append("seoTitle", seoTitle.trim());
-      formData.append("seoDescription", seoDescription.trim());
-      formData.append("seoKeywords", JSON.stringify(seoKeywords));
-      formData.append("focusKeyword", focusKeyword.trim());
-      formData.append("canonicalUrl", canonicalUrl.trim());
-      formData.append("ogTitle", ogTitle.trim());
-      formData.append("ogDescription", ogDescription.trim());
-      formData.append("ogImage", ogImage.trim());
-      formData.append("metaRobots", metaRobots.trim() || "index,follow");
-      formData.append("schemaJson", schemaJson.trim() || "null");
-
-      // Publishing
-      formData.append("isPublished", String(isPublished));
-
-      // Remove extra images
       formData.append("removeExtraImageIds", JSON.stringify(removedExtraImageIds));
 
-      // Files
       if (mainImage) formData.append("mainImage", mainImage);
       if (hoverImage) formData.append("hoverImage", hoverImage);
       if (video) formData.append("video", video);
+      if (sizeChartImage) formData.append("sizeChartImage", sizeChartImage);
 
       extraImages.forEach((image) => {
-        formData.append("extraImages", image);
+        formData.append("extraImages", image, image.name);
       });
 
-      const endpoint = isEdit && productId
-        ? `${API_BASE}/api/v1/products/${productId}`
-        : `${API_BASE}/api/v1/products`;
+      formData.append("extraImagesCount", String(extraImages.length));
 
-      const res = await fetch(endpoint, {
+      const endpoint =
+        isEdit && productId
+          ? `${API_BASE}/api/v1/products/${productId}`
+          : `${API_BASE}/api/v1/products`;
+
+      const response = await fetch(endpoint, {
         method: isEdit ? "PATCH" : "POST",
         headers: authHeaders,
         body: formData,
       });
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (!res.ok || !data.success) {
+      if (!response.ok || !data.success) {
         toast.error(data.message || "Failed to save product");
         return;
       }
@@ -553,7 +993,7 @@ export default function ProductFormPage({
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   if (loading || status === "loading") {
     return (
@@ -568,17 +1008,16 @@ export default function ProductFormPage({
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            {isEdit ? "Edit Product" : "Create Product"}{" "}
-            {panelType === "moderator" ? "(Moderator)" : ""}
+            {isEdit ? "Edit Product" : "Create Product"} {panelType === "moderator" ? "(Moderator)" : ""}
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Add product info, pricing, images, video, stock status and publishing control.
+            Clean product form with every schema field grouped into maintainable sections.
           </p>
         </div>
 
         <Link
           href={listHref}
-          className="rounded-xl border border-gray-700 px-4 py-2 text-sm text-gray-200 hover:border-orange-500 hover:text-orange-400"
+          className="rounded-xl border border-gray-700 px-4 py-2 text-sm text-gray-200 transition hover:border-orange-500 hover:text-orange-400"
         >
           Back to Products
         </Link>
@@ -590,1051 +1029,401 @@ export default function ProductFormPage({
             {isEdit ? "Update Product Details" : "New Product Details"}
           </h2>
           <p className="text-sm text-gray-500">
-            Main image required. Hover image, video and extra images are optional.
+            SKU is auto generated if empty. Slug is auto generated from name if empty.
           </p>
         </div>
 
-        <div className="grid gap-5 p-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-5 p-5 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-4">
-            {/* Basic info */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Product Name *
-                </label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                  placeholder="iPhone 15 Pro Max"
-                />
+            <Section title="Basic Information">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField label="Product Name" required value={form.name} onChange={(value) => setField("name", value)} placeholder="iPhone 15 Pro Max" />
+                <SelectField label="Product Type" value={form.productType} onChange={(value) => setField("productType", value)} options={productTypeOptions} />
+                <TextField label="Slug" value={form.slug} onChange={(value) => setField("slug", value)} placeholder="Auto generated if empty" />
+                <TextField label="SKU" value={form.sku} onChange={(value) => setField("sku", value)} placeholder="Auto generated 0001 if empty" />
+                <TextField label="Product Code" value={form.productCode} onChange={(value) => setField("productCode", value)} placeholder="Internal product code" />
+                <TextField label="Barcode" value={form.barcode} onChange={(value) => setField("barcode", value)} placeholder="UPC/EAN barcode" />
+                <TextField label="Model Name" value={form.modelName} onChange={(value) => setField("modelName", value)} placeholder="A3108 / SM-S928B" />
               </div>
+            </Section>
 
-              {isEdit && sku && (
-                <div className="sm:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    SKU (auto‑generated)
-                  </label>
-                  <input
-                    type="text"
-                    value={sku}
-                    readOnly
-                    className="w-full rounded-xl border border-gray-800 bg-black/50 px-3 py-3 text-gray-500 outline-none cursor-not-allowed"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Model Name
-                </label>
-                <input
-                  value={modelName}
-                  onChange={(e) => setModelName(e.target.value)}
-                  className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                  placeholder="A3108 / SM-S928B"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Product Code
-                </label>
-                <input
-                  value={productCode}
-                  onChange={(e) => setProductCode(e.target.value)}
-                  className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                  placeholder="Internal code"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Barcode
-                </label>
-                <input
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                  className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                  placeholder="UPC/EAN"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Stock Status *
-                </label>
-                <select
-                  value={stockStatus}
-                  onChange={(e) => setStockStatus(e.target.value as StockStatus)}
-                  className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                >
-                  {stockStatusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {isAdmin && (
-                <>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-300">
-                      Stock Quantity
-                    </label>
-                    <input
-                      type="number"
-                      value={stock}
-                      onChange={(e) => setStock(e.target.value)}
-                      className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                      placeholder="Only admin can see this"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-300">
-                      Low Stock Alert Qty
-                    </label>
-                    <input
-                      type="number"
-                      value={lowStockAlertQuantity}
-                      onChange={(e) => setLowStockAlertQuantity(e.target.value)}
-                      className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                      placeholder="Default 5"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Category, SubCategory, Brand */}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-300">
-                    Category *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setCategoryMode((prev) => prev === "existing" ? "new" : "existing")}
-                    className="text-xs font-semibold text-orange-400 hover:text-orange-300"
-                  >
-                    {categoryMode === "existing" ? "Add new" : "Use existing"}
-                  </button>
-                </div>
-
-                {categoryMode === "existing" ? (
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    value={categoryName}
-                    onChange={(e) => setCategoryName(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Type new category name"
-                  />
-                )}
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-300">
-                    Sub-category
-                  </label>
-                  <select
-                    value={subCategoryMode}
-                    onChange={(e) => setSubCategoryMode(e.target.value as SubCategoryMode)}
-                    className="rounded-lg border border-gray-800 bg-black px-2 py-1 text-xs text-gray-300 outline-none focus:border-orange-500"
-                  >
-                    <option value="none">None</option>
-                    {categoryMode === "existing" && <option value="existing">Existing</option>}
-                    <option value="new">New</option>
-                  </select>
-                </div>
-
-                {subCategoryMode === "none" && (
-                  <div className="grid h-[50px] place-items-center rounded-xl border border-gray-800 bg-black text-sm text-gray-600">
-                    No sub-category
-                  </div>
-                )}
-
-                {subCategoryMode === "existing" && (
-                  <select
-                    value={subCategoryId}
-                    onChange={(e) => setSubCategoryId(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                  >
-                    <option value="">Select sub-category</option>
-                    {subCategories.map((sc) => (
-                      <option key={sc.id} value={sc.id}>
-                        {sc.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {subCategoryMode === "new" && (
-                  <input
-                    value={subCategoryName}
-                    onChange={(e) => setSubCategoryName(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Type new sub-category name"
-                  />
-                )}
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-300">
-                    Brand *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setBrandMode((prev) => prev === "existing" ? "new" : "existing")}
-                    className="text-xs font-semibold text-orange-400 hover:text-orange-300"
-                  >
-                    {brandMode === "existing" ? "Add new" : "Use existing"}
-                  </button>
-                </div>
-
-                {brandMode === "existing" ? (
-                  <select
-                    value={brandId}
-                    onChange={(e) => setBrandId(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                  >
-                    <option value="">Select brand</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    value={brandName}
-                    onChange={(e) => setBrandName(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Type new brand name"
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-300">
-                Short Description
-              </label>
-              <textarea
-                value={shortDescription}
-                onChange={(e) => setShortDescription(e.target.value)}
-                rows={2}
-                className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                placeholder="Small summary shown on product details page"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-300">
-                Full Description *
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={6}
-                className="w-full rounded-xl border border-gray-800 bg-black px-3 py-3 text-white outline-none focus:border-orange-500"
-                placeholder="Write product details, benefits, package info..."
-              />
-            </div>
-
-            {/* Pricing */}
-            <div className="rounded-2xl border border-gray-800 bg-black p-4">
-              <h3 className="mb-4 font-semibold text-orange-400">Pricing</h3>
-
+            <Section title="Category, Sub-category & Brand">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    MRP *
-                  </label>
-                  <input
-                    type="number"
-                    value={mrp}
-                    onChange={(e) => setMrp(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                  />
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-300">Category *</label>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryMode((previous) => previous === "existing" ? "new" : "existing")}
+                      className="text-xs font-semibold text-orange-400 hover:text-orange-300"
+                    >
+                      {categoryMode === "existing" ? "Add new" : "Use existing"}
+                    </button>
+                  </div>
+
+                  {categoryMode === "existing" ? (
+                    <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className={inputClass}>
+                      <option value="">Select category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} className={inputClass} placeholder="New category name" />
+                  )}
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Cost Price *
-                  </label>
-                  <input
-                    type="number"
-                    value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                  />
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-300">Sub-category</label>
+                    <select value={subCategoryMode} onChange={(event) => setSubCategoryMode(event.target.value as SubCategoryMode)} className="rounded-lg border border-gray-800 bg-black px-2 py-1 text-xs text-gray-300 outline-none focus:border-orange-500">
+                      <option value="none">None</option>
+                      {categoryMode === "existing" && <option value="existing">Existing</option>}
+                      <option value="new">New</option>
+                    </select>
+                  </div>
+
+                  {subCategoryMode === "none" && (
+                    <div className="grid h-[46px] place-items-center rounded-xl border border-gray-800 bg-black text-sm text-gray-600">No sub-category</div>
+                  )}
+
+                  {subCategoryMode === "existing" && (
+                    <select value={subCategoryId} onChange={(event) => setSubCategoryId(event.target.value)} className={inputClass}>
+                      <option value="">Select sub-category</option>
+                      {subCategories.map((subCategory) => (
+                        <option key={subCategory.id} value={subCategory.id}>{subCategory.name}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {subCategoryMode === "new" && (
+                    <input value={subCategoryName} onChange={(event) => setSubCategoryName(event.target.value)} className={inputClass} placeholder="New sub-category name" />
+                  )}
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Profit Type *
-                  </label>
-                  <select
-                    value={profitType}
-                    onChange={(e) => setProfitType(e.target.value as ProfitType)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                  >
-                    <option value="PERCENTAGE">Percentage</option>
-                    <option value="FIXED">Fixed Amount</option>
-                  </select>
-                </div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-300">Brand *</label>
+                    <button
+                      type="button"
+                      onClick={() => setBrandMode((previous) => previous === "existing" ? "new" : "existing")}
+                      className="text-xs font-semibold text-orange-400 hover:text-orange-300"
+                    >
+                      {brandMode === "existing" ? "Add new" : "Use existing"}
+                    </button>
+                  </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Profit Value *
-                  </label>
-                  <input
-                    type="number"
-                    value={profitValue}
-                    onChange={(e) => setProfitValue(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                  />
+                  {brandMode === "existing" ? (
+                    <select value={brandId} onChange={(event) => setBrandId(event.target.value)} className={inputClass}>
+                      <option value="">Select brand</option>
+                      {brands.map((brand) => (
+                        <option key={brand.id} value={brand.id}>{brand.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input value={brandName} onChange={(event) => setBrandName(event.target.value)} className={inputClass} placeholder="New brand name" />
+                  )}
                 </div>
+              </div>
+            </Section>
+
+            <Section title="Description & Search Content">
+              <div className="space-y-4">
+                <TextAreaField label="Short Description" value={form.shortDescription} onChange={(value) => setField("shortDescription", value)} rows={2} placeholder="Small summary for cards and details page" />
+                <TextAreaField label="Full Description" required value={form.description} onChange={(value) => setField("description", value)} rows={6} placeholder="Write full product description" />
+                <TextField label="Key Features" value={form.keyFeatures} onChange={(value) => setField("keyFeatures", value)} placeholder="Comma separated: 5G, OLED, 48MP camera" />
+                <TextField label="Highlights" value={form.highlights} onChange={(value) => setField("highlights", value)} placeholder="Comma separated: Fast charging, Warranty" />
+                <TextAreaField label="Specifications JSON" value={form.specifications} onChange={(value) => setField("specifications", value)} mono placeholder='{"Display":"6.7 inch","RAM":"8GB"}' />
+                <TextField label="Tags" value={form.tags} onChange={(value) => setField("tags", value)} placeholder="Comma separated: mobile, apple, smartphone" />
+                <TextField label="Search Keywords" value={form.searchKeywords} onChange={(value) => setField("searchKeywords", value)} placeholder="Comma separated: buy iphone, best phone" />
+              </div>
+            </Section>
+
+            <Section title="Pricing">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <TextField label="MRP" required type="number" value={form.mrp} onChange={(value) => setField("mrp", value)} />
+                <TextField label="Cost Price" type="number" value={form.costPrice} onChange={(value) => setField("costPrice", value)} placeholder="Internal cost only" />
+                <TextField label="Selling Price" required type="number" value={form.sellingPrice} onChange={(value) => setField("sellingPrice", value)} placeholder="Customer price" />
               </div>
 
               <div className="mt-4 rounded-xl border border-orange-500/20 bg-orange-500/10 p-4">
-                <p className="text-sm text-gray-400">Auto calculated selling price</p>
-                <p className="text-2xl font-bold text-orange-400">
-                  {formatPrice(calculatedSellingPrice)}
-                </p>
+                <p className="text-sm text-gray-400">Final selling price preview</p>
+                <p className="text-2xl font-bold text-orange-400">{formatPrice(sellingPricePreview)}</p>
+                <p className="mt-1 text-xs text-gray-500">Cost price is internal only. Selling price is saved directly and is not calculated from cost.</p>
               </div>
-            </div>
+            </Section>
 
-            {/* Additional Attributes */}
-            <div className="rounded-2xl border border-gray-800 bg-black p-4">
-              <h3 className="mb-4 font-semibold text-orange-400">Additional Attributes</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Key Features (comma separated)
-                  </label>
-                  <input
-                    value={keyFeaturesInput}
-                    onChange={(e) => {
-                      setKeyFeaturesInput(e.target.value);
-                      setKeyFeatures(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
-                    }}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="5G, OLED display, 48MP camera"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Highlights (comma separated)
-                  </label>
-                  <input
-                    value={highlightsInput}
-                    onChange={(e) => {
-                      setHighlightsInput(e.target.value);
-                      setHighlights(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
-                    }}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Water resistant, Wireless charging"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Specifications (JSON)
-                  </label>
-                  <textarea
-                    value={specifications}
-                    onChange={(e) => setSpecifications(e.target.value)}
-                    rows={4}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 font-mono text-sm text-white outline-none focus:border-orange-500"
-                    placeholder='{"CPU": "A17 Pro", "RAM": "8GB"}'
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Tags (comma separated)
-                  </label>
-                  <input
-                    value={tagsInput}
-                    onChange={(e) => {
-                      setTagsInput(e.target.value);
-                      setTags(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
-                    }}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="iphone, apple, smartphone"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Search Keywords (comma separated)
-                  </label>
-                  <input
-                    value={searchKeywordsInput}
-                    onChange={(e) => {
-                      setSearchKeywordsInput(e.target.value);
-                      setSearchKeywords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
-                    }}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="buy iphone, apple phone"
-                  />
-                </div>
+            <Section title="Stock & Status">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <TextField label="Stock Quantity" type="number" value={form.stock} onChange={(value) => setField("stock", value)} />
+                <SelectField label="Stock Status" value={form.stockStatus} onChange={(value) => setField("stockStatus", value)} options={stockStatusOptions} />
+                <TextField label="Low Stock Alert Qty" type="number" value={form.lowStockAlertQuantity} onChange={(value) => setField("lowStockAlertQuantity", value)} />
+                <TextField label="Sold Quantity" type="number" value={form.soldQuantity} onChange={(value) => setField("soldQuantity", value)} />
+                <TextField label="Reserved Quantity" type="number" value={form.reservedQuantity} onChange={(value) => setField("reservedQuantity", value)} />
               </div>
-            </div>
 
-            {/* Delivery & Policy */}
-            <div className="rounded-2xl border border-gray-800 bg-black p-4">
-              <h3 className="mb-4 font-semibold text-orange-400">Delivery & Policy</h3>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <SwitchField label="In Stock" checked={form.inStock} onChange={(value) => setField("inStock", value)} />
+                <SwitchField label="Published" checked={form.isPublished} onChange={(value) => setField("isPublished", value)} />
+                <SwitchField label="Featured" checked={form.isFeatured} onChange={(value) => setField("isFeatured", value)} />
+                <SwitchField label="New Arrival" checked={form.isNewArrival} onChange={(value) => setField("isNewArrival", value)} />
+                <SwitchField label="Best Seller" checked={form.isBestSeller} onChange={(value) => setField("isBestSeller", value)} />
+                <SwitchField label="Trending" checked={form.isTrending} onChange={(value) => setField("isTrending", value)} />
+                <SwitchField label="Recommended" checked={form.isRecommended} onChange={(value) => setField("isRecommended", value)} />
+                <SwitchField label="Flash Sale" checked={form.isFlashSale} onChange={(value) => setField("isFlashSale", value)} />
+              </div>
+            </Section>
 
+            <Section title="Warranty, Return & Delivery">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Warranty Duration
-                  </label>
-                  <input
-                    value={warrantyDuration}
-                    onChange={(e) => setWarrantyDuration(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="1 year"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Warranty Details
-                  </label>
-                  <input
-                    value={warrantyDetails}
-                    onChange={(e) => setWarrantyDetails(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Manufacturer warranty"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Return Policy
-                  </label>
-                  <input
-                    value={returnPolicy}
-                    onChange={(e) => setReturnPolicy(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="7 days return"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Replacement Policy
-                  </label>
-                  <input
-                    value={replacementPolicy}
-                    onChange={(e) => setReplacementPolicy(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Replace within 3 days"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Refund Policy
-                  </label>
-                  <input
-                    value={refundPolicy}
-                    onChange={(e) => setRefundPolicy(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Refund after inspection"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Delivery Info
-                  </label>
-                  <input
-                    value={deliveryInfo}
-                    onChange={(e) => setDeliveryInfo(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Delivery within 2-3 days"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Delivery Charge
-                  </label>
-                  <input
-                    type="number"
-                    value={deliveryCharge}
-                    onChange={(e) => setDeliveryCharge(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Inside Dhaka Charge
-                  </label>
-                  <input
-                    type="number"
-                    value={insideDhakaDeliveryCharge}
-                    onChange={(e) => setInsideDhakaDeliveryCharge(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Outside Dhaka Charge
-                  </label>
-                  <input
-                    type="number"
-                    value={outsideDhakaDeliveryCharge}
-                    onChange={(e) => setOutsideDhakaDeliveryCharge(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Delivery Time
-                  </label>
-                  <input
-                    value={deliveryTime}
-                    onChange={(e) => setDeliveryTime(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="2-3 business days"
-                  />
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-sm text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={cashOnDelivery}
-                      onChange={(e) => setCashOnDelivery(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-700 bg-black text-orange-500 focus:ring-orange-500"
-                    />
-                    Cash on Delivery
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={freeDelivery}
-                      onChange={(e) => setFreeDelivery(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-700 bg-black text-orange-500 focus:ring-orange-500"
-                    />
-                    Free Delivery
-                  </label>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Free Delivery Min Amount
-                  </label>
-                  <input
-                    type="number"
-                    value={freeDeliveryMinAmount}
-                    onChange={(e) => setFreeDeliveryMinAmount(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="0"
-                  />
-                </div>
+                <TextField label="Warranty Duration" value={form.warrantyDuration} onChange={(value) => setField("warrantyDuration", value)} placeholder="1 year" />
+                <TextField label="Warranty Details" value={form.warrantyDetails} onChange={(value) => setField("warrantyDetails", value)} />
+                <TextField label="Return Policy" value={form.returnPolicy} onChange={(value) => setField("returnPolicy", value)} />
+                <TextField label="Replacement Policy" value={form.replacementPolicy} onChange={(value) => setField("replacementPolicy", value)} />
+                <TextField label="Refund Policy" value={form.refundPolicy} onChange={(value) => setField("refundPolicy", value)} />
+                <TextField label="Delivery Info" value={form.deliveryInfo} onChange={(value) => setField("deliveryInfo", value)} />
+                <TextField label="Delivery Charge" type="number" value={form.deliveryCharge} onChange={(value) => setField("deliveryCharge", value)} />
+                <TextField label="Inside Dhaka Charge" type="number" value={form.insideDhakaDeliveryCharge} onChange={(value) => setField("insideDhakaDeliveryCharge", value)} />
+                <TextField label="Outside Dhaka Charge" type="number" value={form.outsideDhakaDeliveryCharge} onChange={(value) => setField("outsideDhakaDeliveryCharge", value)} />
+                <TextField label="Delivery Time" value={form.deliveryTime} onChange={(value) => setField("deliveryTime", value)} placeholder="2-3 business days" />
+                <TextField label="Free Delivery Min Amount" type="number" value={form.freeDeliveryMinAmount} onChange={(value) => setField("freeDeliveryMinAmount", value)} />
               </div>
 
-              <div className="mt-4">
-                <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Package Includes (comma separated)
-                </label>
-                <input
-                  value={packageIncludesInput}
-                  onChange={(e) => {
-                    setPackageIncludesInput(e.target.value);
-                    setPackageIncludes(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
-                  }}
-                  className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                  placeholder="Phone, Charger, Cable"
-                />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <SwitchField label="Cash on Delivery" checked={form.cashOnDelivery} onChange={(value) => setField("cashOnDelivery", value)} />
+                <SwitchField label="Free Delivery" checked={form.freeDelivery} onChange={(value) => setField("freeDelivery", value)} />
               </div>
+            </Section>
 
+            <Section title="Package Information">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Package Weight
-                  </label>
-                  <input
-                    value={packageWeight}
-                    onChange={(e) => setPackageWeight(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="500g"
-                  />
+                <div className="sm:col-span-2">
+                  <TextField label="Package Includes" value={form.packageIncludes} onChange={(value) => setField("packageIncludes", value)} placeholder="Comma separated: Phone, Charger, Cable" />
                 </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Package Dimensions
-                  </label>
-                  <input
-                    value={packageDimensions}
-                    onChange={(e) => setPackageDimensions(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="20x10x5 cm"
-                  />
-                </div>
+                <TextField label="Package Weight" value={form.packageWeight} onChange={(value) => setField("packageWeight", value)} placeholder="500g" />
+                <TextField label="Package Dimensions" value={form.packageDimensions} onChange={(value) => setField("packageDimensions", value)} placeholder="20x10x5 cm" />
               </div>
-            </div>
+            </Section>
 
-            {/* Supplier Info */}
-            <div className="rounded-2xl border border-gray-800 bg-black p-4">
-              <h3 className="mb-4 font-semibold text-orange-400">Supplier Information</h3>
-
+            <Section title="Supplier & Internal Note" note="This section is returned only from admin product API.">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Supplier Name
-                  </label>
-                  <input
-                    value={supplierName}
-                    onChange={(e) => setSupplierName(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="ABC Suppliers"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Supplier Phone
-                  </label>
-                  <input
-                    value={supplierPhone}
-                    onChange={(e) => setSupplierPhone(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="+880123456789"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Supplier Email
-                  </label>
-                  <input
-                    value={supplierEmail}
-                    onChange={(e) => setSupplierEmail(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="supplier@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Supplier Address
-                  </label>
-                  <input
-                    value={supplierAddress}
-                    onChange={(e) => setSupplierAddress(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Dhaka, Bangladesh"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Supplier Invoice Number
-                  </label>
-                  <input
-                    value={supplierInvoiceNumber}
-                    onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="INV-2025-001"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Internal Note
-                  </label>
-                  <input
-                    value={internalNote}
-                    onChange={(e) => setInternalNote(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Any internal note"
-                  />
-                </div>
+                <TextField label="Supplier Name" value={form.supplierName} onChange={(value) => setField("supplierName", value)} />
+                <TextField label="Supplier Phone" value={form.supplierPhone} onChange={(value) => setField("supplierPhone", value)} />
+                <TextField label="Supplier Email" value={form.supplierEmail} onChange={(value) => setField("supplierEmail", value)} />
+                <TextField label="Supplier Address" value={form.supplierAddress} onChange={(value) => setField("supplierAddress", value)} />
+                <TextField label="Supplier Invoice Number" value={form.supplierInvoiceNumber} onChange={(value) => setField("supplierInvoiceNumber", value)} />
+                <TextField label="Internal Note" value={form.internalNote} onChange={(value) => setField("internalNote", value)} />
               </div>
-            </div>
+            </Section>
 
-            {/* SEO */}
-            <div className="rounded-2xl border border-gray-800 bg-black p-4">
-              <h3 className="mb-4 font-semibold text-orange-400">SEO & Metadata</h3>
-
+            <Section title="SEO & Metadata">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    SEO Title
-                  </label>
-                  <input
-                    value={seoTitle}
-                    onChange={(e) => setSeoTitle(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Buy iPhone 15 Pro Max - Best Price"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    SEO Description
-                  </label>
-                  <input
-                    value={seoDescription}
-                    onChange={(e) => setSeoDescription(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Get the latest iPhone at unbeatable price"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    SEO Keywords (comma separated)
-                  </label>
-                  <input
-                    value={seoKeywordsInput}
-                    onChange={(e) => {
-                      setSeoKeywordsInput(e.target.value);
-                      setSeoKeywords(e.target.value.split(",").map((s) => s.trim()).filter(Boolean));
-                    }}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="iphone, apple, mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Focus Keyword
-                  </label>
-                  <input
-                    value={focusKeyword}
-                    onChange={(e) => setFocusKeyword(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="iPhone 15 Pro Max"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Canonical URL
-                  </label>
-                  <input
-                    value={canonicalUrl}
-                    onChange={(e) => setCanonicalUrl(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="https://example.com/products/iphone-15"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Meta Robots
-                  </label>
-                  <input
-                    value={metaRobots}
-                    onChange={(e) => setMetaRobots(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="index,follow"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    OG Title
-                  </label>
-                  <input
-                    value={ogTitle}
-                    onChange={(e) => setOgTitle(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="Open Graph Title"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    OG Description
-                  </label>
-                  <input
-                    value={ogDescription}
-                    onChange={(e) => setOgDescription(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="OG Description"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    OG Image URL
-                  </label>
-                  <input
-                    value={ogImage}
-                    onChange={(e) => setOgImage(e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-white outline-none focus:border-orange-500"
-                    placeholder="https://example.com/og-image.jpg"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Schema JSON (JSON)
-                  </label>
-                  <textarea
-                    value={schemaJson}
-                    onChange={(e) => setSchemaJson(e.target.value)}
-                    rows={4}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 font-mono text-sm text-white outline-none focus:border-orange-500"
-                    placeholder='{"@context": "https://schema.org", "@type": "Product"}'
-                  />
-                </div>
+                <TextField label="SEO Title" value={form.seoTitle} onChange={(value) => setField("seoTitle", value)} />
+                <TextField label="SEO Description" value={form.seoDescription} onChange={(value) => setField("seoDescription", value)} />
+                <TextField label="SEO Keywords" value={form.seoKeywords} onChange={(value) => setField("seoKeywords", value)} placeholder="Comma separated" />
+                <TextField label="Focus Keyword" value={form.focusKeyword} onChange={(value) => setField("focusKeyword", value)} />
+                <TextField label="Canonical URL" value={form.canonicalUrl} onChange={(value) => setField("canonicalUrl", value)} />
+                <TextField label="Meta Robots" value={form.metaRobots} onChange={(value) => setField("metaRobots", value)} />
+                <TextField label="OG Title" value={form.ogTitle} onChange={(value) => setField("ogTitle", value)} />
+                <TextField label="OG Description" value={form.ogDescription} onChange={(value) => setField("ogDescription", value)} />
+                <TextField label="OG Image URL" value={form.ogImage} onChange={(value) => setField("ogImage", value)} />
+                <TextAreaField label="Schema JSON" value={form.schemaJson} onChange={(value) => setField("schemaJson", value)} mono placeholder='{"@context":"https://schema.org","@type":"Product"}' />
               </div>
-            </div>
+            </Section>
+
+            <Section title="Stats & Audit Values" note="You can leave these as default. Usually order/review logic should update these automatically.">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <TextField label="View Count" type="number" value={form.viewCount} onChange={(value) => setField("viewCount", value)} />
+                <TextField label="Wishlist Count" type="number" value={form.wishlistCount} onChange={(value) => setField("wishlistCount", value)} />
+                <TextField label="Cart Count" type="number" value={form.cartCount} onChange={(value) => setField("cartCount", value)} />
+                <TextField label="Order Count" type="number" value={form.orderCount} onChange={(value) => setField("orderCount", value)} />
+                <TextField label="Average Rating" type="number" value={form.averageRating} onChange={(value) => setField("averageRating", value)} />
+                <TextField label="Total Reviews" type="number" value={form.totalReviews} onChange={(value) => setField("totalReviews", value)} />
+                <TextField label="Published At" type="datetime-local" value={form.publishedAt} onChange={(value) => setField("publishedAt", value)} />
+              </div>
+
+              {initialProduct && (
+                <div className="mt-4 grid gap-3 rounded-xl border border-gray-800 bg-gray-950 p-4 text-xs text-gray-400 sm:grid-cols-2">
+                  <p>Created By: {initialProduct.createdByEmail || "N/A"}</p>
+                  <p>Updated By: {initialProduct.updatedByEmail || "N/A"}</p>
+                  <p>Created At: {initialProduct.createdAt ? new Date(initialProduct.createdAt).toLocaleString() : "N/A"}</p>
+                  <p>Updated At: {initialProduct.updatedAt ? new Date(initialProduct.updatedAt).toLocaleString() : "N/A"}</p>
+                </div>
+              )}
+            </Section>
           </div>
 
-          {/* Right column: Images and Publishing */}
           <div className="space-y-4">
-            {/* Main image */}
-            <label className="block rounded-2xl border border-dashed border-gray-700 bg-black p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-300">
-                  Main Image {!isEdit && "*"}
-                </span>
-                <span className="text-xs text-gray-500">JPG/PNG/WEBP</span>
+            <Section title="Main Image">
+              <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
+                <div className="grid min-h-[220px] place-items-center overflow-hidden rounded-xl bg-black">
+                  {mainPreview ? (
+                    <img src={mainPreview} alt="Main preview" className="h-56 w-full object-contain p-3" />
+                  ) : (
+                    <span className="text-sm text-gray-500">Click to upload main image</span>
+                  )}
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={(event) => updateFilePreview(event, setMainImage, setMainPreview, initialProduct?.mainImageUrl || "")} />
+              </label>
+              <div className="mt-4">
+                <TextField label="Main Image Alt Text" value={form.mainImageAlt} onChange={(value) => setField("mainImageAlt", value)} />
               </div>
+            </Section>
 
-              <div className="grid min-h-[180px] place-items-center overflow-hidden rounded-xl bg-gray-950">
-                {mainPreview ? (
-                  <img
-                    src={mainPreview}
-                    alt="Main preview"
-                    className="h-48 w-full object-contain p-3"
-                  />
-                ) : (
-                  <span className="text-sm text-gray-500">Click to upload main image</span>
+            <Section title="Hover Image">
+              <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
+                <div className="grid min-h-[160px] place-items-center overflow-hidden rounded-xl bg-black">
+                  {hoverPreview ? (
+                    <img src={hoverPreview} alt="Hover preview" className="h-40 w-full object-contain p-3" />
+                  ) : (
+                    <span className="text-sm text-gray-500">Click to upload hover image</span>
+                  )}
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={(event) => updateFilePreview(event, setHoverImage, setHoverPreview, initialProduct?.hoverImageUrl || "")} />
+              </label>
+              <div className="mt-4 space-y-3">
+                <TextField label="Hover Image Alt Text" value={form.hoverImageAlt} onChange={(value) => setField("hoverImageAlt", value)} />
+                {initialProduct?.hoverImageUrl && (
+                  <SwitchField label="Remove Existing Hover Image" checked={form.removeHoverImage} onChange={(value) => setField("removeHoverImage", value)} />
                 )}
               </div>
+            </Section>
 
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) =>
-                  handleFilePreview(
-                    e.target.files?.[0] || null,
-                    setMainImage,
-                    setMainPreview,
-                    initialData?.mainImageUrl || ""
-                  )
-                }
-              />
-            </label>
+            <Section title="Product Video">
+              <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
+                <div className="grid aspect-video place-items-center overflow-hidden rounded-xl bg-black">
+                  {videoPreview ? (
+                    <video src={videoPreview} className="h-full w-full object-contain" controls muted />
+                  ) : (
+                    <span className="text-sm text-gray-500">Click to upload product video</span>
+                  )}
+                </div>
+                <input type="file" accept="video/*" className="hidden" onChange={(event) => updateFilePreview(event, setVideo, setVideoPreview, initialProduct?.videoUrl || "")} />
+              </label>
+              {initialProduct?.videoUrl && (
+                <div className="mt-4">
+                  <SwitchField label="Remove Existing Video" checked={form.removeVideo} onChange={(value) => setField("removeVideo", value)} />
+                </div>
+              )}
+            </Section>
 
-            {/* Hover image */}
-            <label className="block rounded-2xl border border-dashed border-gray-700 bg-black p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-300">Hover Image</span>
-                <span className="text-xs text-gray-500">Shows on card hover</span>
-              </div>
-
-              <div className="grid min-h-[140px] place-items-center overflow-hidden rounded-xl bg-gray-950">
-                {hoverPreview ? (
-                  <img
-                    src={hoverPreview}
-                    alt="Hover preview"
-                    className="h-40 w-full object-contain p-3"
-                  />
-                ) : (
-                  <span className="text-sm text-gray-500">Click to upload hover image</span>
-                )}
-              </div>
-
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) =>
-                  handleFilePreview(
-                    e.target.files?.[0] || null,
-                    setHoverImage,
-                    setHoverPreview,
-                    initialData?.hoverImageUrl || ""
-                  )
-                }
-              />
-            </label>
-
-            {/* Video */}
-            <label className="block rounded-2xl border border-dashed border-gray-700 bg-black p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-300">Product Video</span>
-                <span className="text-xs text-gray-500">Optional</span>
-              </div>
-
-              <div className="grid aspect-video place-items-center overflow-hidden rounded-xl bg-gray-950">
-                {videoPreview ? (
-                  <video
-                    src={videoPreview}
-                    className="h-full w-full object-contain"
-                    controls
-                    muted
-                  />
-                ) : (
-                  <span className="text-sm text-gray-500">Click to upload product video</span>
-                )}
-              </div>
-
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={(e) =>
-                  handleFilePreview(
-                    e.target.files?.[0] || null,
-                    setVideo,
-                    setVideoPreview,
-                    initialData?.videoUrl || ""
-                  )
-                }
-              />
-            </label>
-
-            {/* Existing extra images */}
-            {(initialData?.extraImages?.length || 0) > 0 && (
-              <div className="rounded-2xl border border-gray-800 bg-black p-4">
-                <p className="mb-3 text-sm font-medium text-gray-300">
-                  Existing Extra Images
-                </p>
-
-                <div className="grid max-h-[260px] grid-cols-3 gap-3 overflow-y-auto">
-                  {initialData?.extraImages?.map((image) => {
+            <Section title="Extra Images">
+              {(initialProduct?.extraImages?.length || 0) > 0 && (
+                <div className="mb-4 grid grid-cols-3 gap-3">
+                  {initialProduct?.extraImages?.map((image) => {
                     const removed = removedExtraImageIds.includes(image.id);
+
                     return (
                       <button
                         type="button"
                         key={image.id}
-                        onClick={() => toggleRemoveExtraImage(image.id)}
-                        className={`relative overflow-hidden rounded-xl border ${
-                          removed ? "border-red-500 opacity-40" : "border-gray-800"
-                        }`}
+                        onClick={() => toggleRemoveExistingExtraImage(image.id)}
+                        className={`relative overflow-hidden rounded-xl border ${removed ? "border-red-500 opacity-45" : "border-gray-800"}`}
                       >
-                        <img
-                          src={image.imageUrl}
-                          alt="Extra"
-                          className="h-20 w-full object-contain p-2"
-                        />
-                        <span className="absolute bottom-1 left-1 right-1 rounded bg-black/70 py-1 text-[10px] text-white">
+                        <img src={image.imageUrl} alt={image.altText || "Extra image"} className="h-24 w-full object-contain p-2" />
+                        <span className="absolute bottom-1 left-1 right-1 rounded bg-black/80 py-1 text-[10px] text-white">
                           {removed ? "Will remove" : "Click remove"}
                         </span>
                       </button>
                     );
                   })}
                 </div>
-              </div>
-            )}
-
-            {/* New extra images */}
-            <label className="block rounded-2xl border border-dashed border-gray-700 bg-black p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-300">Extra Images</span>
-                <span className="text-xs text-gray-500">JPG/PNG/WEBP multiple</span>
-              </div>
+              )}
 
               <input
+                ref={extraImagesInputRef}
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={(e) => handleExtraImagesChange(e.target.files)}
-                className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-3 text-sm text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-600 file:px-3 file:py-2 file:text-white"
+                onChange={handleExtraImagesChange}
+                className="hidden"
               />
 
-              {extraImages.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs text-orange-400">
-                    {extraImages.length} new extra image(s) selected
-                  </p>
+              <div className="rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4">
+                <button
+                  type="button"
+                  onClick={() => extraImagesInputRef.current?.click()}
+                  className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                >
+                  Add Extra Images
+                </button>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {extraImages.map((file, index) => (
-                      <button
-                        key={`${file.name}-${index}`}
-                        type="button"
-                        onClick={() => removeNewExtraImage(index)}
-                        className="rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-left text-xs text-gray-300 hover:border-red-500 hover:text-red-300"
-                      >
-                        Remove: {file.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </label>
-
-            {/* Publishing toggle */}
-            <div className="flex items-center justify-between rounded-2xl border border-gray-800 bg-black p-4">
-              <div>
-                <p className="font-medium text-white">Published Status</p>
-                <p className="text-sm text-gray-500">
-                  Hide product from frontend when off.
+                <p className="mt-3 text-xs text-gray-400">
+                  You can select 1 image or many images together. Selected new images: {extraImages.length}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsPublished((prev) => !prev)}
-                className={`relative h-7 w-12 rounded-full transition ${
-                  isPublished ? "bg-orange-500" : "bg-gray-700"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
-                    isPublished ? "left-6" : "left-1"
-                  }`}
-                />
-              </button>
-            </div>
+              <div className="mt-4">
+                <TextField label="Extra Images Alt Text" value={form.extraImagesAlt} onChange={(value) => setField("extraImagesAlt", value)} />
+              </div>
+
+              {extraImages.length > 0 && (
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {extraImages.map((file, index) => (
+                    <div key={`${file.name}-${file.size}-${file.lastModified}-${index}`} className="rounded-xl border border-gray-800 bg-gray-950 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-gray-200">{file.name}</p>
+                          <p className="mt-1 text-[11px] text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeNewExtraImage(index)}
+                          className="shrink-0 rounded-lg border border-red-500/40 px-2 py-1 text-[11px] text-red-300 hover:bg-red-500/10"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+
+            <Section title="Size Chart">
+              <div className="space-y-4">
+                <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
+                  <div className="grid min-h-[150px] place-items-center overflow-hidden rounded-xl bg-black">
+                    {sizeChartPreview ? (
+                      <img src={sizeChartPreview} alt="Size chart preview" className="h-40 w-full object-contain p-3" />
+                    ) : (
+                      <span className="text-sm text-gray-500">Click to upload size chart image</span>
+                    )}
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={(event) => updateFilePreview(event, setSizeChartImage, setSizeChartPreview, initialProduct?.sizeChart?.imageUrl || "")} />
+                </label>
+
+                <TextField label="Size Chart Name" value={form.sizeChartName} onChange={(value) => setField("sizeChartName", value)} placeholder="Men Shirt Size Chart" />
+                <TextField label="Size Chart Title" value={form.sizeChartTitle} onChange={(value) => setField("sizeChartTitle", value)} />
+                <TextAreaField label="Size Chart Description" value={form.sizeChartDescription} onChange={(value) => setField("sizeChartDescription", value)} rows={3} />
+                <TextField label="Unit" value={form.sizeChartUnit} onChange={(value) => setField("sizeChartUnit", value)} placeholder="inch / cm" />
+                <TextAreaField label="Chart Data JSON" value={form.sizeChartData} onChange={(value) => setField("sizeChartData", value)} mono placeholder='[{"size":"M","chest":"38","length":"27"}]' />
+                <TextField label="Note" value={form.sizeChartNote} onChange={(value) => setField("sizeChartNote", value)} />
+                <TextField label="Sort Order" type="number" value={form.sizeChartSortOrder} onChange={(value) => setField("sizeChartSortOrder", value)} />
+
+                <SwitchField label="Size Chart Active" checked={form.sizeChartIsActive} onChange={(value) => setField("sizeChartIsActive", value)} />
+
+                {initialProduct?.sizeChart && (
+                  <>
+                    <SwitchField label="Remove Size Chart" checked={form.removeSizeChart} onChange={(value) => setField("removeSizeChart", value)} />
+                    <SwitchField label="Remove Size Chart Image" checked={form.removeSizeChartImage} onChange={(value) => setField("removeSizeChartImage", value)} />
+                  </>
+                )}
+              </div>
+            </Section>
           </div>
         </div>
 
         <div className="flex justify-end gap-3 border-t border-gray-800 bg-gray-950/95 p-5">
-          <Link
-            href={listHref}
-            className="rounded-xl bg-gray-800 px-5 py-3 text-white hover:bg-gray-700"
-          >
+          <Link href={listHref} className="rounded-xl bg-gray-800 px-5 py-3 text-white transition hover:bg-gray-700">
             Cancel
           </Link>
-
           <button
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+            className="rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Processing..." : isEdit ? "Update Product" : "Create Product"}
           </button>

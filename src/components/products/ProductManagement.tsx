@@ -7,7 +7,6 @@ import { FaEdit, FaEye, FaPlus, FaTrash, FaChevronDown } from "react-icons/fa";
 import Link from "next/link";
 import ConfirmationModal from "@/components/users/ConfirmationModal";
 import type { Product, StockStatus } from "@/types/product";
-import { getStockStatusLabel } from "@/types/product";
 import { formatPrice } from "@/lib/formatPrice";
 
 interface ProductManagementProps {
@@ -62,8 +61,7 @@ function buildProductUpdateFormData(
 
   formData.append("mrp", String(product.mrp ?? 0));
   formData.append("costPrice", String(product.costPrice ?? 0));
-  formData.append("profitType", product.profitType || "PERCENTAGE");
-  formData.append("profitValue", String(product.profitValue ?? 0));
+  formData.append("sellingPrice", String(product.sellingPrice ?? 0));
   formData.append("stock", String(product.stock ?? 0));
   formData.append("stockStatus", updates.stockStatus || product.stockStatus || "IN_STOCK");
   formData.append("isPublished", String(updates.isPublished ?? product.isPublished ?? true));
@@ -433,7 +431,7 @@ export default function ProductManagement({ panelType }: ProductManagementProps)
                           >
                             <div className="space-y-2">
                               <Link
-                                href={`/products/${product.slug}`}
+                                href={`/products/${encodeURIComponent(product.slug || product.id)}`}
                                 target="_blank"
                                 className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-gray-300 transition hover:bg-orange-500/20 hover:text-orange-400"
                               >

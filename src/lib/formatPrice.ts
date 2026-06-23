@@ -1,5 +1,8 @@
-export function formatPrice(price: number) {
-  const safePrice = Number.isFinite(Number(price)) ? Number(price) : 0;
+// src/lib/formatPrice.ts
+
+export function formatPrice(price: number | string | null | undefined) {
+  const numericPrice = Number(price);
+  const safePrice = Number.isFinite(numericPrice) ? numericPrice : 0;
 
   return new Intl.NumberFormat("en-BD", {
     style: "currency",
