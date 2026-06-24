@@ -1,9 +1,8 @@
-// components/navbar/NavLinks.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ReactNode, useRef, useState } from "react";
+import { ReactNode, Suspense, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   FaBolt,
@@ -16,18 +15,12 @@ import {
   FaQuestionCircle,
   FaShieldAlt,
   FaStar,
-  FaThLarge,
   FaTruck,
   FaUndo,
   FaMapMarkerAlt,
   FaInfoCircle,
   FaBlog,
 } from "react-icons/fa";
-
-const mainNavItems = [
-  { name: "Home", href: "/" },
-  { name: "Products", href: "/products" },
-];
 
 const categoryItems = [
   {
@@ -135,13 +128,12 @@ const DesktopDropdown = ({
 }: DesktopDropdownProps) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
   const [isOpen, setIsOpen] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Build full current URL (pathname + search params)
-  const currentFullPath =
-    pathname +
-    (searchParams.toString() ? `?${searchParams.toString()}` : "");
+  const currentSearch = searchParams.toString();
+  const currentFullPath = currentSearch ? `${pathname}?${currentSearch}` : pathname;
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -161,13 +153,15 @@ const DesktopDropdown = ({
       onMouseLeave={handleMouseLeave}
     >
       <button
-        className={`flex items-center gap-1 transition-colors  ${
+        type="button"
+        className={`flex items-center gap-1 transition-colors ${
           isActive
-            ? "text-orange-500 font-semibold"
+            ? "font-semibold text-orange-500"
             : "text-white hover:text-orange-400"
         }`}
       >
         <span>{title}</span>
+
         <FaChevronDown
           className={`text-xs transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -182,23 +176,23 @@ const DesktopDropdown = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.18 }}
-            className="absolute left-0 mt-3 w-50 bg-black border border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden"
+            className="absolute left-0 z-50 mt-3 w-56 overflow-hidden rounded-xl border border-gray-800 bg-black shadow-xl"
           >
-            <ul className="py-2 ">
+            <ul className="py-2">
               {items.map((item) => {
-                // Exact match including query parameters
                 const isItemActive = currentFullPath === item.href;
+
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
                       className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
                         isItemActive
-                          ? "text-orange-500 bg-gray-900"
-                          : "text-gray-300 hover:text-orange-400 hover:bg-gray-900"
+                          ? "bg-gray-900 text-orange-500"
+                          : "text-gray-300 hover:bg-gray-900 hover:text-orange-400"
                       }`}
                     >
-                      <span className="text-orange-500 text-base">
+                      <span className="text-base text-orange-500">
                         {item.icon}
                       </span>
                       <span>{item.name}</span>
@@ -214,8 +208,9 @@ const DesktopDropdown = ({
   );
 };
 
-export const NavLinks = () => {
+const NavLinksContent = () => {
   const pathname = usePathname();
+
   const isHomeActive = pathname === "/";
   const isProductsActive = pathname.startsWith("/products");
   const isSupportActive = supportItems.some((item) => pathname === item.href);
@@ -228,29 +223,54 @@ export const NavLinks = () => {
           href="/"
           className={`transition-colors ${
             isHomeActive
-              ? "text-orange-500 font-semibold"
+              ? "font-semibold text-orange-500"
               : "text-white hover:text-orange-400"
           }`}
         >
           Home
         </Link>
       </li>
+
       <li>
         <Link
           href="/products"
           className={`transition-colors ${
             isProductsActive
-              ? "text-orange-500 font-semibold"
+              ? "font-semibold text-orange-500"
               : "text-white hover:text-orange-400"
           }`}
         >
           Products
         </Link>
       </li>
-      <DesktopDropdown title="Categories" items={categoryItems} isActive={false} />
+
+      <DesktopDropdown
+        title="Categories"
+        items={categoryItems}
+        isActive={false}
+      />
+
       <DesktopDropdown title="Explore" items={exploreItems} isActive={false} />
-      <DesktopDropdown title="Support" items={supportItems} isActive={isSupportActive} />
-      <DesktopDropdown title="Company" items={companyItems} isActive={isCompanyActive} />
+
+      <DesktopDropdown
+        title="Support"
+        items={supportItems}
+        isActive={isSupportActive}
+      />
+
+      <DesktopDropdown
+        title="Company"
+        items={companyItems}
+        isActive={isCompanyActive}
+      />
     </ul>
+  );
+};
+
+export const NavLinks = () => {
+  return (
+    <Suspense fallback={null}>
+      <NavLinksContent />
+    </Suspense>
   );
 };

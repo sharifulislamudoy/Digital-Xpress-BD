@@ -1,6 +1,5 @@
-import FavoritesClient from "@/components/favorites/FavoritesClient";
 import { Suspense } from "react";
-
+import FavoritesClient from "@/components/favorites/FavoritesClient";
 
 const FavoritesPageLoading = () => {
   return (
@@ -16,6 +15,7 @@ const FavoritesPageLoading = () => {
               className="overflow-hidden rounded-2xl border border-gray-800 bg-black/60"
             >
               <div className="aspect-square animate-pulse bg-gray-900" />
+
               <div className="space-y-4 p-4">
                 <div className="h-5 animate-pulse rounded bg-gray-800" />
                 <div className="h-5 w-24 animate-pulse rounded bg-gray-800" />
