@@ -176,7 +176,7 @@ export default function AdminUsersPage() {
   if (loading) return <div className="flex justify-center items-center h-64"><span className="text-gray-400">Loading users...</span></div>;
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-white">User Management</h1>
         <Link href="/admin/users/banned-users" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition">

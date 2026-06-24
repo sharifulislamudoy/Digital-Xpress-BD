@@ -337,7 +337,7 @@ export default function ProductManagement({ panelType }: ProductManagementProps)
   }
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">

@@ -57,6 +57,30 @@ export interface ProductImage {
   createdAt?: string;
 }
 
+export interface ProductReviewImage {
+  id: string;
+  reviewId: string;
+  imageUrl: string;
+  cloudinaryPublicId?: string;
+  altText?: string | null;
+  sortOrder?: number;
+  createdAt?: string;
+}
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userId?: string | null;
+  userName?: string | null;
+  userEmail: string;
+  rating: number;
+  comment: string;
+  images?: ProductReviewImage[];
+  isPublished?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SizeChart {
   id: string;
   productId: string;
@@ -188,6 +212,7 @@ export interface Product {
   orderCount?: number;
   averageRating?: number;
   totalReviews?: number;
+  reviews?: ProductReview[];
 
   createdById?: string | null;
   createdByName?: string | null;
@@ -201,7 +226,7 @@ export interface Product {
   updatedAt?: string;
 
   rating?: number;
-  reviews?: number;
+  reviewCount?: number;
   discount?: number;
   originalPrice?: number;
   canAddToCart?: boolean;
