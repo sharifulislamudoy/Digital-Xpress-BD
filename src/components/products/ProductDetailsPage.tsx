@@ -375,7 +375,7 @@ function formatLabel(value: unknown) {
     .map((word) => {
       const lower = word.toLowerCase();
 
-      if (["id", "sku", "gsm", "url", "seo", "og"].includes(lower)) {
+      if (["id", "gsm", "url", "seo", "og"].includes(lower)) {
         return lower.toUpperCase();
       }
 
@@ -583,7 +583,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function InfoGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid min-w-0 gap-3 grid-cols-2">
       {children}
     </div>
   );
@@ -1086,18 +1086,6 @@ export default function ProductDetailsPage({
     hasRenderableValue(product.modelName) && {
       label: "Model",
       value: displayValue(product.modelName),
-    },
-    hasRenderableValue(product.sku) && {
-      label: "SKU",
-      value: displayValue(product.sku),
-    },
-    hasRenderableValue(product.productCode) && {
-      label: "Product Code",
-      value: displayValue(product.productCode),
-    },
-    hasRenderableValue(product.barcode) && {
-      label: "Barcode",
-      value: displayValue(product.barcode),
     },
   ]);
 
@@ -1942,7 +1930,7 @@ export default function ProductDetailsPage({
           )}
         </div>
 
-        <div className="min-w-0 h-fit rounded-2xl border border-gray-800 bg-black p-4 sm:p-5 lg:mt-10">
+        <div className="min-w-0 h-fit rounded-2xl border border-gray-800 bg-black p-4 sm:p-5 lg:mt-6">
           {(badges.length > 0 || discount > 0) && (
             <div className="flex flex-wrap gap-2">
               {badges.map((badge) => (

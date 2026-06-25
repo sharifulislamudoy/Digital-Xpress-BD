@@ -5,8 +5,6 @@ export function formatPrice(price: number | string | null | undefined) {
   const safePrice = Number.isFinite(numericPrice) ? numericPrice : 0;
 
   return new Intl.NumberFormat("en-BD", {
-    style: "currency",
-    currency: "BDT",
     maximumFractionDigits: 0,
   }).format(safePrice);
 }

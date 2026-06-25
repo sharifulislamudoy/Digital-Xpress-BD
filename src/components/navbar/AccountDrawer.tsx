@@ -169,7 +169,7 @@ export const AccountDrawer = ({
                     </Link>
 
                     <Link
-                      href="/orders"
+                      href="/my-orders"
                       onClick={onClose}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-900 transition text-white"
                     >
