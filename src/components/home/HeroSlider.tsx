@@ -52,16 +52,16 @@ function HeroBannerSkeleton() {
   return (
     <section className="w-full bg-[#080b12] py-3 sm:py-4 md:py-6">
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6">
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-900 sm:aspect-[16/7] md:aspect-auto md:h-[390px] md:rounded-2xl lg:h-[460px] xl:h-[520px]">
+        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gray-900 md:rounded-2xl">
           <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" />
 
           <div className="absolute inset-0 animate-pulse">
             <div className="absolute inset-0 bg-gray-800/70" />
 
-            <div className="absolute bottom-4 right-4 flex gap-2 sm:bottom-6 sm:right-6">
-              <span className="h-2.5 w-7 rounded-full bg-gray-600" />
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-700" />
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-700" />
+            <div className="absolute bottom-3 right-3 flex gap-2 sm:bottom-4 sm:right-4 md:bottom-5 md:right-5">
+              <span className="h-2 w-6 rounded-full bg-gray-600 sm:h-2.5 sm:w-7" />
+              <span className="h-2 w-2 rounded-full bg-gray-700 sm:h-2.5 sm:w-2.5" />
+              <span className="h-2 w-2 rounded-full bg-gray-700 sm:h-2.5 sm:w-2.5" />
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export default function HeroSlider() {
   }
 
   return (
-    <section className="w-full bg-[#080b12] py-3 sm:py-4 md:py-6">
+    <section className="w-full bg-black py-3 sm:py-4 md:py-6">
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6">
         <Swiper
           modules={[Autoplay, Pagination]}
@@ -147,20 +147,20 @@ export default function HeroSlider() {
                 }
               : false
           }
-          className="hero-overlap-swiper rounded-xl md:rounded-2xl"
+          className="hero-16by9-swiper rounded-xl md:rounded-2xl"
         >
           {banners.map((banner, index) => {
             const href = getBannerHref(banner.productLink);
 
             const bannerImage = (
-              <div className="relative block aspect-[16/9] w-full overflow-hidden rounded-xl bg-neutral-900 sm:aspect-[16/7] md:aspect-auto md:h-[390px] md:rounded-2xl lg:h-[460px] xl:h-[520px]">
+              <div className="relative block aspect-video w-full overflow-hidden rounded-xl bg-[#080b12] md:rounded-2xl">
                 <Image
                   src={banner.imageUrl}
                   alt={`Digital Xpress banner ${index + 1}`}
                   fill
                   priority={index === 0}
-                  sizes="(max-width: 768px) 100vw, 1280px"
-                  className="block object-cover"
+                  sizes="(max-width: 640px) calc(100vw - 24px), (max-width: 768px) calc(100vw - 32px), (max-width: 1280px) calc(100vw - 48px), 1280px"
+                  className="block object-contain"
                 />
               </div>
             );

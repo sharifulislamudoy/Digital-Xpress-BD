@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -26,17 +25,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.hero-overlap-swiper {
+.hero-16by9-swiper {
   width: 100%;
   overflow: hidden;
 }
 
-.hero-overlap-swiper .swiper-wrapper {
+.hero-16by9-swiper .swiper-wrapper {
   align-items: stretch;
   transition-timing-function: cubic-bezier(0.76, 0, 0.24, 1) !important;
 }
 
-.hero-overlap-swiper .swiper-slide {
+.hero-16by9-swiper .swiper-slide {
   width: 100% !important;
   height: auto;
   overflow: hidden;
@@ -44,10 +43,10 @@ body {
   transform: translateZ(0);
 }
 
-.hero-overlap-swiper .swiper-pagination {
+.hero-16by9-swiper .swiper-pagination {
   left: auto !important;
-  right: 24px !important;
-  bottom: 18px !important;
+  right: 20px !important;
+  bottom: 16px !important;
   width: auto !important;
   display: flex;
   align-items: center;
@@ -55,7 +54,7 @@ body {
   gap: 6px;
 }
 
-.hero-overlap-swiper .swiper-pagination-bullet {
+.hero-16by9-swiper .swiper-pagination-bullet {
   margin: 0 !important;
   width: 9px;
   height: 9px;
@@ -64,7 +63,7 @@ body {
   transition: all 0.35s ease;
 }
 
-.hero-overlap-swiper .swiper-pagination-bullet-active {
+.hero-16by9-swiper .swiper-pagination-bullet-active {
   width: 28px;
   border-radius: 999px;
   background: #f97316;
@@ -72,21 +71,22 @@ body {
 }
 
 @media (max-width: 767px) {
-  .hero-overlap-swiper .swiper-wrapper {
+  .hero-16by9-swiper .swiper-wrapper {
     transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1) !important;
   }
 
-  .hero-overlap-swiper .swiper-pagination {
-    right: 14px !important;
-    bottom: 12px !important;
+  .hero-16by9-swiper .swiper-pagination {
+    right: 12px !important;
+    bottom: 10px !important;
+    gap: 5px;
   }
 
-  .hero-overlap-swiper .swiper-pagination-bullet {
+  .hero-16by9-swiper .swiper-pagination-bullet {
     width: 7px;
     height: 7px;
   }
 
-  .hero-overlap-swiper .swiper-pagination-bullet-active {
+  .hero-16by9-swiper .swiper-pagination-bullet-active {
     width: 22px;
   }
 }
