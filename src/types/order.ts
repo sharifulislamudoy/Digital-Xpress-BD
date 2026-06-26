@@ -59,6 +59,87 @@ export interface Order {
   items: OrderItem[];
 }
 
+export const bdDistrictOptions = [
+  "Bagerhat",
+  "Bandarban",
+  "Barguna",
+  "Barishal",
+  "Bhola",
+  "Bogra",
+  "Brahmanbaria",
+  "Chandpur",
+  "Chapainawabganj",
+  "Chittagong",
+  "Chuadanga",
+  "Cox's Bazar",
+  "Cumilla",
+  "Dhaka City",
+  "Dhaka Sub-Urban",
+  "Dinajpur",
+  "Faridpur",
+  "Feni",
+  "Gaibandha",
+  "Gazipur",
+  "Gopalganj",
+  "Habiganj",
+  "Jamalpur",
+  "Jashore",
+  "Jhalokati",
+  "Jhenaidah",
+  "Joypurhat",
+  "Khagrachori",
+  "Khulna",
+  "Kishoreganj",
+  "Kurigram",
+  "Kustia",
+  "Lalmonirhat",
+  "Laxmipur",
+  "Madaripur",
+  "Magura",
+  "Manikganj",
+  "Meherpur",
+  "Moulvibazar",
+  "Munshiganj",
+  "Mymensingh",
+  "Naogaon",
+  "Narail",
+  "Narayanganj",
+  "Narshindi",
+  "Natore",
+  "Netrokona",
+  "Nilphamari",
+  "Noakhali",
+  "Pabna",
+  "Panchagarh",
+  "Patuakhali",
+  "Pirojpur",
+  "Rajbari",
+  "Rajshahi",
+  "Rangamati",
+  "Rangpur",
+  "Shariatpur",
+  "Shatkhira",
+  "Sherpur",
+  "Sirajganj",
+  "Sunamganj",
+  "Sylhet",
+  "Tangail",
+  "Thakurgaon",
+] as const;
+
+export const DHAKA_DELIVERY_CHARGE = 80;
+export const OUTSIDE_DHAKA_DELIVERY_CHARGE = 130;
+
+export function isDhakaDistrict(district?: string | null) {
+  return (district || "").trim().toLowerCase().startsWith("dhaka");
+}
+
+export function getDeliveryChargeByDistrict(district?: string | null) {
+  return isDhakaDistrict(district)
+    ? DHAKA_DELIVERY_CHARGE
+    : OUTSIDE_DHAKA_DELIVERY_CHARGE;
+}
+
 export const orderStatusOptions: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },

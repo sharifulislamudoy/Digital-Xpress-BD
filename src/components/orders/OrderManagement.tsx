@@ -12,6 +12,7 @@ import {
   FaSearch,
   FaTimes,
   FaTrash,
+  FaTruck,
 } from "react-icons/fa";
 
 import ConfirmationModal from "@/components/users/ConfirmationModal";
@@ -61,6 +62,18 @@ const emptyOrderCounts: OrderCounts = {
   delivered: 0,
   cancelled: 0,
   returned: 0,
+};
+
+type CourierForm = {
+  courierName: string;
+  courierTrackingNumber: string;
+  courierNote: string;
+};
+
+const emptyCourierForm: CourierForm = {
+  courierName: "",
+  courierTrackingNumber: "",
+  courierNote: "",
 };
 
 interface OrderManagementProps {
@@ -175,6 +188,8 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
   const [isBulkMenuOpen, setIsBulkMenuOpen] = useState(false);
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
+  const [isCourierModalOpen, setIsCourierModalOpen] = useState(false);
+  const [courierForm, setCourierForm] = useState<CourierForm>(emptyCourierForm);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -378,6 +393,22 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
     }
 
     setIsBulkStatusModalOpen(false);
+
+    if (bulkStatus === "shipped") {
+      setIsCourierModalOpen(true);
+      return;
+    }
+
+    setIsBulkConfirmOpen(true);
+  };
+
+  const startCourierConfirm = () => {
+    if (!courierForm.courierName.trim()) {
+      toast.error("Courier name is required");
+      return;
+    }
+
+    setIsCourierModalOpen(false);
     setIsBulkConfirmOpen(true);
   };
 
@@ -400,6 +431,7 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
         body: JSON.stringify({
           invoiceNos: selectedInvoices,
           status: bulkStatus,
+          ...(bulkStatus === "shipped" ? courierForm : {}),
         }),
       });
 
@@ -413,7 +445,9 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
       toast.success(data.message || "Orders updated");
       setIsBulkConfirmOpen(false);
       setIsBulkStatusModalOpen(false);
+      setIsCourierModalOpen(false);
       setIsBulkMenuOpen(false);
+      setCourierForm(emptyCourierForm);
       loadOrders();
       loadOrderCounts();
     } catch {
@@ -513,7 +547,7 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
                 onClick={() => setIsBulkMenuOpen((current) => !current)}
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 text-sm font-black text-white transition hover:bg-orange-700 sm:w-auto"
               >
-                Action
+                Bulk Action
                 <FaChevronDown
                   size={11}
                   className={`transition ${
@@ -838,6 +872,15 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
         onSubmit={startBulkStatusConfirm}
       />
 
+      <CourierInfoModal
+        isOpen={isCourierModalOpen}
+        selectedCount={selectedInvoices.length}
+        form={courierForm}
+        onChange={(nextForm) => setCourierForm(nextForm)}
+        onClose={() => setIsCourierModalOpen(false)}
+        onSubmit={startCourierConfirm}
+      />
+
       {viewOrder && (
         <OrderViewModal order={viewOrder} onClose={() => setViewOrder(null)} />
       )}
@@ -847,7 +890,11 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
         onClose={() => setIsBulkConfirmOpen(false)}
         onConfirm={handleBulkStatus}
         title="Confirm Status Change"
-        message={`Are you sure you want to change ${selectedInvoices.length} selected order status to ${selectedStatusLabel}?`}
+        message={
+          bulkStatus === "shipped"
+            ? `Are you sure you want to change ${selectedInvoices.length} selected order status to ${selectedStatusLabel}? Courier information will be added to all selected orders.`
+            : `Are you sure you want to change ${selectedInvoices.length} selected order status to ${selectedStatusLabel}?`
+        }
         confirmText="Confirm Change"
         isLoading={actionLoading === "bulk-status"}
       />
@@ -864,6 +911,113 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
         confirmVariant="danger"
         isLoading={actionLoading === `delete-${deleteOrder?.invoiceNo}`}
       />
+    </div>
+  );
+}
+
+function CourierInfoModal({
+  isOpen,
+  selectedCount,
+  form,
+  onChange,
+  onClose,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  selectedCount: number;
+  form: CourierForm;
+  onChange: (form: CourierForm) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  if (!isOpen) return null;
+
+  const setField = <K extends keyof CourierForm>(key: K, value: CourierForm[K]) => {
+    onChange({ ...form, [key]: value });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] grid place-items-center bg-black/75 px-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xl rounded-3xl border border-neutral-800 bg-neutral-950 p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-neutral-800 pb-4">
+          <div>
+            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300">
+              <FaTruck size={18} />
+            </div>
+            <h2 className="text-xl font-black text-white">Courier Information</h2>
+            <p className="mt-1 text-sm leading-6 text-neutral-400">
+              {selectedCount} selected order shipped korte courier info add koro. Ei info sob selected order e add hobe.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-10 w-10 place-items-center rounded-2xl border border-neutral-800 text-neutral-400 transition hover:border-orange-500/50 hover:text-orange-300"
+            aria-label="Close courier modal"
+          >
+            <FaTimes size={14} />
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-300">Courier Name *</span>
+            <input
+              value={form.courierName}
+              onChange={(event) => setField("courierName", event.target.value)}
+              placeholder="Pathao / RedX / Paperfly / SA Paribahan"
+              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-black px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-600 focus:border-orange-500"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-300">Tracking Number</span>
+            <input
+              value={form.courierTrackingNumber}
+              onChange={(event) => setField("courierTrackingNumber", event.target.value)}
+              placeholder="Type tracking or consignment number"
+              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-black px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-600 focus:border-orange-500"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-300">Courier Note</span>
+            <textarea
+              value={form.courierNote}
+              onChange={(event) => setField("courierNote", event.target.value)}
+              maxLength={400}
+              rows={4}
+              placeholder="Any courier note"
+              className="mt-2 w-full resize-none rounded-2xl border border-neutral-800 bg-black px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-neutral-600 focus:border-orange-500"
+            />
+          </label>
+        </div>
+
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl border border-neutral-800 px-5 py-3 text-sm font-bold text-neutral-300 transition hover:bg-black hover:text-white"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="rounded-2xl bg-orange-600 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-700"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

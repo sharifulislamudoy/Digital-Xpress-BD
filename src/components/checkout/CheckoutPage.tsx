@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { FaCheckCircle, FaMinus, FaPlus, FaTrash } from "react-icons/fa";
 import type { Product } from "@/types/product";
 import type { DeliveryType, Order } from "@/types/order";
+import { bdDistrictOptions, getDeliveryChargeByDistrict } from "@/types/order";
 import { formatPrice } from "@/lib/formatPrice";
 
 const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(/\/+$/, "");
@@ -21,11 +22,16 @@ type SessionTokenShape = {
   } | null;
 } | null | undefined;
 
-
 type CartProduct = Product & {
+  id: string;
+  name: string;
   quantity: number;
   addedAt?: string;
   updatedAt?: string;
+  sellingPrice?: number | string | null;
+  price?: number | string | null;
+  mainImageUrl?: string | null;
+  image?: string | null;
 };
 
 type CheckoutProfile = {
@@ -102,6 +108,11 @@ function isValidPhone(value: string) {
   return /^01\d{9}$/.test(value.trim());
 }
 
+function isValidEmail(value: string) {
+  if (!value.trim()) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 function requiredMissingFields(form: CheckoutFormState) {
   const missing: string[] = [];
 
@@ -132,6 +143,14 @@ export default function CheckoutPage() {
     }, 0);
   }, [cartItems]);
 
+  const deliveryCharge = useMemo(() => {
+    return getDeliveryChargeByDistrict(form.district);
+  }, [form.district]);
+
+  const grandTotal = useMemo(() => {
+    return subtotal + deliveryCharge;
+  }, [subtotal, deliveryCharge]);
+
   useEffect(() => {
     setCartItems(readCart());
   }, []);
@@ -142,7 +161,12 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (status !== "authenticated" || !token || !API_BASE) return;
+    if (status === "loading") return;
+
+    if (!API_BASE || !token) {
+      setProfileLoading(false);
+      return;
+    }
 
     const loadProfile = async () => {
       try {
@@ -233,6 +257,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!isValidEmail(form.customerEmail) || !isValidEmail(form.recipientEmail)) {
+      toast.error("Email address valid na");
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -244,6 +273,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           ...form,
+          deliveryCharge,
           items: cartItems.map((item) => ({ productId: item.id, quantity: item.quantity || 1 })),
         }),
       });
@@ -300,14 +330,14 @@ export default function CheckoutPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white sm:text-3xl">Checkout</h1>
         <p className="mt-2 text-sm text-gray-400">
-          Missing information thakle ekhane fill kore order submit koro.
+          Submit the order after filling in the missing information here.
         </p>
       </div>
 
       {cartItems.length === 0 ? (
         <div className="rounded-3xl border border-gray-800 bg-black p-8 text-center">
           <h2 className="text-xl font-bold text-white">Your cart is empty</h2>
-          <p className="mt-2 text-sm text-gray-400">Order korte hole first e product add korte hobe.</p>
+          <p className="mt-2 text-sm text-gray-400">To place an order, you need to add a product first.</p>
           <Link
             href="/products"
             className="mt-6 inline-flex rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-700"
@@ -349,7 +379,7 @@ export default function CheckoutPage() {
                 <TextField label="Email" value={form.customerEmail} onChange={(value) => setField("customerEmail", value)} placeholder="Type Customer Email" />
                 <TextField label="Recipient Email" value={form.recipientEmail} onChange={(value) => setField("recipientEmail", value)} placeholder="Type Recipient Email" />
                 <TextAreaField label="Address" value={form.customerAddress} onChange={(value) => setField("customerAddress", value)} placeholder="Type Address" required />
-                <TextField label="District" value={form.district} onChange={(value) => setField("district", value)} placeholder="Dhaka City" required />
+                <DistrictSelect label="District" value={form.district} onChange={(value) => setField("district", value)} required />
                 <TextField label="Thana" value={form.thana} onChange={(value) => setField("thana", value)} placeholder="Type Thana" />
                 <TextField label="Alternative Phone" value={form.alternativePhone} onChange={(value) => setField("alternativePhone", value)} placeholder="Type Alternative Phone" />
                 <div className="sm:col-span-2">
@@ -364,12 +394,13 @@ export default function CheckoutPage() {
                 {cartItems.map((item) => {
                   const price = money(item.sellingPrice || item.price || 0);
                   const quantity = Math.max(Number(item.quantity || 1), 1);
+                  const imageUrl = item.mainImageUrl || item.image;
 
                   return (
                     <div key={item.id} className="flex gap-3 rounded-2xl border border-gray-800 bg-gray-950 p-3">
                       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-black">
-                        {item.mainImageUrl || item.image ? (
-                          <img src={item.mainImageUrl || item.image} alt={item.name} className="h-full w-full object-contain p-1" />
+                        {imageUrl ? (
+                          <img src={imageUrl} alt={item.name} className="h-full w-full object-contain p-1" />
                         ) : null}
                       </div>
 
@@ -408,13 +439,13 @@ export default function CheckoutPage() {
 
             <div className="mt-5 space-y-3 text-sm">
               <SummaryRow label="Subtotal" value={formatPrice(subtotal)} />
-              <SummaryRow label="Delivery Charge" value="Calculated after submit" />
+              <SummaryRow label="Delivery Charge" value={formatPrice(deliveryCharge)} />
               <SummaryRow label="Payment Method" value="Cash on Delivery" />
             </div>
 
             <div className="mt-5 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-orange-300/80">Estimated Product Total</p>
-              <p className="mt-2 text-3xl font-black text-white">{formatPrice(subtotal)}</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-orange-300/80">Total COD Amount</p>
+              <p className="mt-2 text-3xl font-black text-white">{formatPrice(grandTotal)}</p>
             </div>
 
             <button
@@ -441,6 +472,7 @@ export default function CheckoutPage() {
             <div className="mt-5 rounded-2xl border border-gray-800 bg-gray-950 p-4 text-left text-sm">
               <SummaryRow label="Invoice" value={createdOrder.invoiceNo} />
               <SummaryRow label="Status" value="Pending" />
+              <SummaryRow label="Delivery Charge" value={formatPrice(createdOrder.deliveryCharge)} />
               <SummaryRow label="COD Amount" value={formatPrice(createdOrder.codAmount)} />
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -480,6 +512,35 @@ function TextField({
         placeholder={placeholder}
         className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
       />
+    </label>
+  );
+}
+
+function DistrictSelect({
+  label,
+  value,
+  onChange,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-semibold text-gray-300">{label}{required ? " *" : ""}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
+      >
+        {bdDistrictOptions.map((district) => (
+          <option key={district} value={district} className="bg-black text-white">
+            {district}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

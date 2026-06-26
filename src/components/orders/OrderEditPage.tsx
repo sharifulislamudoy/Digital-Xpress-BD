@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import type { DeliveryType, Order, OrderStatus } from "@/types/order";
-import { orderStatusOptions } from "@/types/order";
+import { bdDistrictOptions, getDeliveryChargeByDistrict, orderStatusOptions } from "@/types/order";
 import { formatPrice } from "@/lib/formatPrice";
 
 const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(/\/+$/, "");
@@ -63,6 +63,8 @@ function toInput(value: unknown) {
 }
 
 function createForm(order: Order): OrderEditForm {
+  const district = order.district || "Dhaka City";
+
   return {
     customerName: order.customerName || "",
     customerEmail: order.customerEmail || "",
@@ -70,11 +72,11 @@ function createForm(order: Order): OrderEditForm {
     alternativePhone: order.alternativePhone || "",
     recipientEmail: order.recipientEmail || "",
     customerAddress: order.customerAddress || "",
-    district: order.district || "",
+    district,
     thana: order.thana || "",
     deliveryType: order.deliveryType || "home",
     totalAmount: toInput(order.totalAmount),
-    deliveryCharge: toInput(order.deliveryCharge),
+    deliveryCharge: toInput(order.deliveryCharge || getDeliveryChargeByDistrict(district)),
     discountAmount: toInput(order.discountAmount),
     paidAmount: toInput(order.paidAmount),
     note: order.note || "",
@@ -139,12 +141,29 @@ export default function OrderEditPage({ panelType, invoiceNo }: OrderEditPagePro
   }, [token, invoiceNo]);
 
   const setField = <K extends keyof OrderEditForm>(key: K, value: OrderEditForm[K]) => {
-    setForm((current) => (current ? { ...current, [key]: value } : current));
+    setForm((current) => {
+      if (!current) return current;
+
+      if (key === "district") {
+        return {
+          ...current,
+          district: value as string,
+          deliveryCharge: String(getDeliveryChargeByDistrict(value as string)),
+        };
+      }
+
+      return { ...current, [key]: value };
+    });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form) return;
+
+    if (form.status === "shipped" && !form.courierName.trim()) {
+      toast.error("Shipped korte hole courier name dite hobe");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -202,7 +221,7 @@ export default function OrderEditPage({ panelType, invoiceNo }: OrderEditPagePro
                 <TextField label="Customer Email" value={form.customerEmail} onChange={(value) => setField("customerEmail", value)} />
                 <TextField label="Recipient Email" value={form.recipientEmail} onChange={(value) => setField("recipientEmail", value)} />
                 <TextField label="Alternative Phone" value={form.alternativePhone} onChange={(value) => setField("alternativePhone", value)} />
-                <TextField label="District" value={form.district} onChange={(value) => setField("district", value)} required />
+                <DistrictSelect label="District" value={form.district} onChange={(value) => setField("district", value)} required />
                 <TextField label="Thana" value={form.thana} onChange={(value) => setField("thana", value)} />
                 <label className="block">
                   <span className="text-sm font-semibold text-gray-300">Delivery Type</span>
@@ -267,11 +286,12 @@ export default function OrderEditPage({ panelType, invoiceNo }: OrderEditPagePro
               </div>
             </Section>
 
-            <Section title="Manual Courier Information">
+            <Section title="Courier Information">
               <div className="space-y-4">
                 <TextField label="Courier Name" value={form.courierName} onChange={(value) => setField("courierName", value)} placeholder="Pathao / RedX / Paperfly / SA Paribahan" />
                 <TextField label="Tracking Number" value={form.courierTrackingNumber} onChange={(value) => setField("courierTrackingNumber", value)} />
                 <TextAreaField label="Courier Note" value={form.courierNote} onChange={(value) => setField("courierNote", value)} rows={3} maxLength={400} />
+                <p className="text-xs leading-5 text-gray-500">Status shipped dile courier name required. Processing থেকে Shipped হলে user email a courier info সহ shipped mail যাবে.</p>
               </div>
             </Section>
 
@@ -326,6 +346,35 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500"
       />
+    </label>
+  );
+}
+
+function DistrictSelect({
+  label,
+  value,
+  onChange,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-semibold text-gray-300">{label}{required ? " *" : ""}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition focus:border-orange-500"
+      >
+        {bdDistrictOptions.map((district) => (
+          <option key={district} value={district} className="bg-black text-white">
+            {district}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

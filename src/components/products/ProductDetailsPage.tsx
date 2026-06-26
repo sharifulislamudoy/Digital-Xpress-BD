@@ -154,25 +154,25 @@ function saveProductToCart(
 
   const updatedCart = existing
     ? currentCart.map((item) =>
-        item.id === product.id
-          ? {
-              ...item,
-              quantity: options.incrementExisting
-                ? (item.quantity || 1) + 1
-                : item.quantity || 1,
-              updatedAt: now,
-            }
-          : item
-      )
-    : [
-        ...currentCart,
-        {
-          ...product,
-          quantity: 1,
-          addedAt: now,
+      item.id === product.id
+        ? {
+          ...item,
+          quantity: options.incrementExisting
+            ? (item.quantity || 1) + 1
+            : item.quantity || 1,
           updatedAt: now,
-        },
-      ];
+        }
+        : item
+    )
+    : [
+      ...currentCart,
+      {
+        ...product,
+        quantity: 1,
+        addedAt: now,
+        updatedAt: now,
+      },
+    ];
 
   writeLocalStorage(CART_STORAGE_KEY, updatedCart);
   dispatchCartUpdated(updatedCart);
@@ -407,9 +407,9 @@ function getCategoryName(product: Product, fallback?: string) {
 function getCategorySlug(product: Product, fallback?: string) {
   const category = product.category as
     | {
-        name?: string | null;
-        slug?: string | null;
-      }
+      name?: string | null;
+      slug?: string | null;
+    }
     | undefined
     | null;
 
@@ -872,9 +872,8 @@ function RatingStars({
   return (
     <div
       aria-label={`${safeValue.toFixed(1)} out of 5 stars`}
-      className={`flex items-center gap-0.5 ${
-        size === "md" ? "text-lg" : "text-sm"
-      }`}
+      className={`flex items-center gap-0.5 ${size === "md" ? "text-lg" : "text-sm"
+        }`}
     >
       {Array.from({ length: 5 }).map((_, index) => (
         <span
@@ -1146,12 +1145,12 @@ export default function ProductDetailsPage({
     const updatedWishlist = already
       ? currentWishlist.filter((item) => item.id !== product.id)
       : [
-          ...currentWishlist,
-          {
-            ...product,
-            addedAt: new Date().toISOString(),
-          },
-        ];
+        ...currentWishlist,
+        {
+          ...product,
+          addedAt: new Date().toISOString(),
+        },
+      ];
 
     writeLocalStorage(WISHLIST_STORAGE_KEY, updatedWishlist);
     dispatchWishlistUpdated(updatedWishlist);
@@ -1234,9 +1233,9 @@ export default function ProductDetailsPage({
 
       const sessionWithToken = session as
         | (typeof session & {
-            accessToken?: string;
-            user?: { accessToken?: string; token?: string } | null;
-          })
+          accessToken?: string;
+          user?: { accessToken?: string; token?: string } | null;
+        })
         | null;
 
       const token =
@@ -1280,11 +1279,11 @@ export default function ProductDetailsPage({
       setProduct((currentProduct) =>
         currentProduct
           ? {
-              ...currentProduct,
-              reviews: nextReviews,
-              averageRating: Number(data.averageRating || 0),
-              totalReviews: Number(data.totalReviews || nextReviews.length),
-            }
+            ...currentProduct,
+            reviews: nextReviews,
+            averageRating: Number(data.averageRating || 0),
+            totalReviews: Number(data.totalReviews || nextReviews.length),
+          }
           : currentProduct
       );
       setReviewComment("");
@@ -1378,9 +1377,8 @@ export default function ProductDetailsPage({
       return (
         <Section title="Size Chart">
           <div
-            className={`grid min-w-0 items-start gap-4 sm:gap-5 ${
-              sizeChartImage ? "lg:grid-cols-[0.7fr_1.3fr]" : ""
-            }`}
+            className={`grid min-w-0 items-start gap-4 sm:gap-5 ${sizeChartImage ? "lg:grid-cols-[0.7fr_1.3fr]" : ""
+              }`}
           >
             {sizeChartImage && (
               <div className="h-fit">
@@ -1521,11 +1519,10 @@ export default function ProductDetailsPage({
                       type="button"
                       onClick={() => setReviewRating(rating)}
                       disabled={isSubmittingReview}
-                      className={`rounded-2xl border px-2 py-3 text-center transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                        reviewRating >= rating
-                          ? "border-orange-500 bg-orange-500/15 text-orange-300 shadow-[0_0_0_1px_rgba(249,115,22,0.18)]"
-                          : "border-gray-800 bg-black text-gray-500 hover:border-gray-700 hover:text-gray-300"
-                      }`}
+                      className={`rounded-2xl border px-2 py-3 text-center transition disabled:cursor-not-allowed disabled:opacity-60 ${reviewRating >= rating
+                        ? "border-orange-500 bg-orange-500/15 text-orange-300 shadow-[0_0_0_1px_rgba(249,115,22,0.18)]"
+                        : "border-gray-800 bg-black text-gray-500 hover:border-gray-700 hover:text-gray-300"
+                        }`}
                       aria-label={`${rating} star rating`}
                     >
                       <span className="block text-lg leading-none">★</span>
@@ -1566,11 +1563,10 @@ export default function ProductDetailsPage({
 
                   <label
                     htmlFor="review-photo-input"
-                    className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
-                      reviewImages.length >= MAX_REVIEW_IMAGES || isSubmittingReview
-                        ? "pointer-events-none border-gray-800 bg-gray-900 text-gray-600"
-                        : "border-orange-500/40 bg-orange-500/10 text-orange-300 hover:border-orange-500 hover:bg-orange-500/15"
-                    }`}
+                    className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${reviewImages.length >= MAX_REVIEW_IMAGES || isSubmittingReview
+                      ? "pointer-events-none border-gray-800 bg-gray-900 text-gray-600"
+                      : "border-orange-500/40 bg-orange-500/10 text-orange-300 hover:border-orange-500 hover:bg-orange-500/15"
+                      }`}
                   >
                     <span className="text-lg leading-none">＋</span>
                     Add Photo
@@ -1656,7 +1652,7 @@ export default function ProductDetailsPage({
             </div>
 
             {reviews.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-4 grid grid-cols-1 gap-4 lg:grid-cols-3 w-full">
                 {reviews.map((review) => {
                   const reviewerName = review.userName || "Customer";
                   const avatarText = reviewerName.trim().charAt(0).toUpperCase() || "C";
@@ -1667,32 +1663,34 @@ export default function ProductDetailsPage({
                       key={review.id}
                       className="rounded-3xl border border-gray-800 bg-gray-950/90 p-4 transition hover:border-gray-700 sm:p-5"
                     >
-                      <div className="flex gap-3 sm:gap-4">
-                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-orange-500/20 bg-orange-500/10 text-sm font-black text-orange-300 sm:h-12 sm:w-12">
-                          {avatarText}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <h4 className="break-words text-sm font-black text-white sm:text-base">
-                                {reviewerName}
-                              </h4>
-                              <div className="mt-1 flex flex-wrap items-center gap-2">
-                                <RatingStars value={review.rating} />
-                                <span className="rounded-full border border-gray-800 bg-black px-2 py-0.5 text-[11px] font-semibold text-gray-400">
-                                  {review.rating}/5
-                                </span>
-                              </div>
-                            </div>
-
-                            {reviewDate && (
-                              <p className="shrink-0 text-xs font-medium text-gray-500">
-                                {reviewDate}
-                              </p>
-                            )}
+                      <div className="flex gap-3 sm:gap-4 flex-col">
+                        <div className="flex gap-3 sm:gap-4">
+                          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-orange-500/20 bg-orange-500/10 text-sm font-black text-orange-300 sm:h-12 sm:w-12">
+                            {avatarText}
                           </div>
 
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <h4 className="break-words text-sm font-black text-white sm:text-base">
+                                  {reviewerName}
+                                </h4>
+                                <div className="mt-1 flex flex-wrap items-center gap-2">
+                                  <RatingStars value={review.rating} />
+                                  <span className="rounded-full border border-gray-800 bg-black px-2 py-0.5 text-[11px] font-semibold text-gray-400">
+                                    {review.rating}/5
+                                  </span>
+                                </div>
+                                {reviewDate && (
+                                  <p className="shrink-0 text-xs font-medium text-gray-500">
+                                    {reviewDate}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-full h-auto">
                           <p className="mt-4 whitespace-pre-line break-words text-sm leading-7 text-gray-300">
                             {review.comment}
                           </p>
@@ -1885,11 +1883,10 @@ export default function ProductDetailsPage({
                 isWishlisted ? "Remove from favorites" : "Add to favorites"
               }
               aria-pressed={isWishlisted}
-              className={`absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full border text-lg shadow-lg backdrop-blur-md transition duration-300 ${
-                isWishlisted
-                  ? "border-orange-400/70 bg-orange-500 text-white"
-                  : "border-white/10 bg-black/65 text-white hover:border-orange-400/70 hover:bg-orange-500 hover:text-white"
-              }`}
+              className={`absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full border text-lg shadow-lg backdrop-blur-md transition duration-300 ${isWishlisted
+                ? "border-orange-400/70 bg-orange-500 text-white"
+                : "border-white/10 bg-black/65 text-white hover:border-orange-400/70 hover:bg-orange-500 hover:text-white"
+                }`}
             >
               <SoftLoveIcon filled={isWishlisted} />
             </button>
@@ -1903,11 +1900,10 @@ export default function ProductDetailsPage({
                     type="button"
                     key={`${imageUrl}-${index}`}
                     onClick={() => setSelectedImage(imageUrl)}
-                    className={`aspect-square shrink-0 basis-[4.25rem] snap-start overflow-hidden rounded-xl border bg-gray-950 transition hover:border-orange-500 sm:basis-[calc((100%_-_2rem)/5)] ${
-                      mainDisplayImage === imageUrl
-                        ? "border-orange-500"
-                        : "border-gray-800"
-                    }`}
+                    className={`aspect-square shrink-0 basis-[4.25rem] snap-start overflow-hidden rounded-xl border bg-gray-950 transition hover:border-orange-500 sm:basis-[calc((100%_-_2rem)/5)] ${mainDisplayImage === imageUrl
+                      ? "border-orange-500"
+                      : "border-gray-800"
+                      }`}
                   >
                     <img
                       src={imageUrl}
@@ -2018,11 +2014,10 @@ export default function ProductDetailsPage({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`whitespace-nowrap rounded-xl px-3 py-2.5 text-xs font-semibold transition sm:px-4 sm:py-3 sm:text-sm ${
-                    activeTabToRender === tab.id
-                      ? "bg-orange-600 text-white"
-                      : "text-gray-400 hover:bg-gray-950 hover:text-orange-400"
-                  }`}
+                  className={`whitespace-nowrap rounded-xl px-3 py-2.5 text-xs font-semibold transition sm:px-4 sm:py-3 sm:text-sm ${activeTabToRender === tab.id
+                    ? "bg-orange-600 text-white"
+                    : "text-gray-400 hover:bg-gray-950 hover:text-orange-400"
+                    }`}
                 >
                   {tab.label}
                 </button>
