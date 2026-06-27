@@ -7,7 +7,6 @@ import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import type { Product } from "@/types/product";
 import {
-  canProductBeAddedToCart,
   getDiscountPercentage,
   getProductBadges,
   getStockStatusLabel,
@@ -32,6 +31,30 @@ type StoredWishlistProduct = Product & {
 
 const CART_STORAGE_KEY = "digital-xpress-cart";
 const WISHLIST_STORAGE_KEY = "digital-xpress-wishlist";
+
+const MANUAL_UNAVAILABLE_STOCK_STATUSES = new Set(["OUT_OF_STOCK", "COMING_SOON"]);
+
+function canProductBeOrdered(product: Product | null | undefined) {
+  if (!product) return false;
+
+  const productData = product as Product & {
+    canAddToCart?: boolean | null;
+    inStock?: boolean | null;
+    isPublished?: boolean | null;
+    stockStatus?: string | null;
+  };
+
+  const stockStatus = String(productData.stockStatus || "").toUpperCase();
+
+  // Stock quantity 0 or negative is allowed.
+  // Only manual unavailable status / flag should block cart and checkout.
+  if (productData.isPublished === false) return false;
+  if (productData.inStock === false) return false;
+  if (MANUAL_UNAVAILABLE_STOCK_STATUSES.has(stockStatus)) return false;
+  if (productData.canAddToCart === false) return false;
+
+  return true;
+}
 
 const readLocalStorage = <T,>(key: string, fallback: T): T => {
   if (typeof window === "undefined") return fallback;
@@ -117,7 +140,7 @@ const ProductCard = ({
   const hoverImage = product.hoverImageUrl || product.hoverImage || image;
   const discount = getDiscountPercentage(product);
   const productHref = getProductHref(product);
-  const canAddToCart = canProductBeAddedToCart(product);
+  const canAddToCart = canProductBeOrdered(product);
   const stockLabel = getStockStatusLabel(product.stockStatus);
   const badges = getProductBadges(product).slice(0, 2);
 

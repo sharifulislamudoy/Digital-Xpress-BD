@@ -161,3 +161,30 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
 export function canCancelOrder(status: OrderStatus) {
   return status === "pending";
 }
+
+export interface OrderItemProfitFieldsPatch {
+  unitCostPrice?: number;
+  totalCost?: number;
+  profit?: number;
+  costBreakdown?:
+    | Array<{
+        batchId: string | null;
+        batchNo: string | null;
+        quantity: number;
+        unitCostPrice: number;
+        totalCost: number;
+        source: "batch" | "legacy";
+      }>
+    | null;
+}
+
+export interface OrderProfitFieldsPatch {
+  productCostTotal?: number;
+  grossProfit?: number;
+  actualCourierCost?: number;
+  packagingCost?: number;
+  paymentFee?: number;
+  otherCost?: number;
+  netProfit?: number;
+  inventoryRestoredAt?: string | null;
+}

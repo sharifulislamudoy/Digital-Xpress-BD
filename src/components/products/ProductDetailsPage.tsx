@@ -16,7 +16,6 @@ import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import type { Product } from "@/types/product";
 import {
-  canProductBeAddedToCart,
   getDiscountPercentage,
   getProductBadges,
   getStockStatusLabel,
@@ -103,6 +102,30 @@ const MAX_REVIEW_IMAGES = 10;
 const REVIEW_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const CART_STORAGE_KEY = "digital-xpress-cart";
 const WISHLIST_STORAGE_KEY = "digital-xpress-wishlist";
+
+const MANUAL_UNAVAILABLE_STOCK_STATUSES = new Set(["OUT_OF_STOCK", "COMING_SOON"]);
+
+function canProductBeOrdered(product: Product | null | undefined) {
+  if (!product) return false;
+
+  const productData = product as Product & {
+    canAddToCart?: boolean | null;
+    inStock?: boolean | null;
+    isPublished?: boolean | null;
+    stockStatus?: string | null;
+  };
+
+  const stockStatus = String(productData.stockStatus || "").toUpperCase();
+
+  // Stock quantity 0 or negative is allowed.
+  // Only manual unavailable status / flag should block cart and checkout.
+  if (productData.isPublished === false) return false;
+  if (productData.inStock === false) return false;
+  if (MANUAL_UNAVAILABLE_STOCK_STATUSES.has(stockStatus)) return false;
+  if (productData.canAddToCart === false) return false;
+
+  return true;
+}
 
 const readLocalStorage = <T,>(key: string, fallback: T): T => {
   if (typeof window === "undefined") return fallback;
@@ -936,7 +959,7 @@ export default function ProductDetailsPage({
     [product]
   );
 
-  const canAddToCart = product ? canProductBeAddedToCart(product) : false;
+  const canAddToCart = canProductBeOrdered(product);
 
   useEffect(() => {
     const loadProduct = async () => {

@@ -344,8 +344,8 @@ export default function ProductManagement({ panelType }: ProductManagementProps)
             Product Management {panelType === "moderator" ? "(Moderator)" : ""}
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Manage product info, pricing, stock status and publishing without opening
-            the edit page every time.
+            Manage product info, pricing, manual stock status and publishing without opening
+            the edit page every time. Stock 0/negative will not auto change status.
           </p>
         </div>
 
@@ -564,8 +564,25 @@ export default function ProductManagement({ panelType }: ProductManagementProps)
                       {formatPrice(product.sellingPrice)}
                     </td>
 
-                    <td className="px-3 py-2 text-xs font-semibold text-gray-300">
-                      {typeof product.stock === "number" ? product.stock : "—"}
+                    <td className="px-3 py-2">
+                      <div className="space-y-0.5">
+                        <span
+                          className={`text-xs font-bold ${
+                            typeof product.stock === "number" && product.stock < 0
+                              ? "text-red-300"
+                              : typeof product.stock === "number" && product.stock === 0
+                              ? "text-yellow-300"
+                              : "text-gray-300"
+                          }`}
+                        >
+                          {typeof product.stock === "number" ? product.stock : "—"}
+                        </span>
+                        {typeof product.stock === "number" && product.stock <= 0 && (
+                          <span className="block text-[9px] text-gray-500">
+                            Status manual
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-3 py-2">

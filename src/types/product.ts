@@ -229,6 +229,12 @@ export interface Product {
   reviewCount?: number;
   discount?: number;
   originalPrice?: number;
+
+  /**
+   * Backend helper field.
+   * Stock quantity 0 or negative should not make this false automatically.
+   * Only manual unavailable states should block cart/order.
+   */
   canAddToCart?: boolean;
 }
 
@@ -246,11 +252,20 @@ export const stockStatusLabels: Record<StockStatus, string> = {
   COMING_SOON: "Coming soon",
 };
 
+/**
+ * UI/filter purpose.
+ * Final cart/order decision should use canProductBeAddedToCart().
+ */
 export const purchasableStockStatuses: StockStatus[] = [
   "IN_STOCK",
   "LIMITED_STOCK",
   "LOW_STOCK",
   "PRE_ORDER",
+];
+
+export const orderBlockingStockStatuses: StockStatus[] = [
+  "OUT_OF_STOCK",
+  "COMING_SOON",
 ];
 
 export const priceRanges = [
@@ -261,9 +276,30 @@ export const priceRanges = [
   { min: 5000, max: Infinity, label: "Above ৳5000" },
 ];
 
-export function canProductBeAddedToCart(product: Product) {
-  if (typeof product.canAddToCart === "boolean") return product.canAddToCart;
-  return purchasableStockStatuses.includes(product.stockStatus);
+export function isManualStockBlocked(status?: StockStatus | null) {
+  return Boolean(status && orderBlockingStockStatuses.includes(status));
+}
+
+export function canProductBeAddedToCart(product?: Product | null) {
+  if (!product) return false;
+
+  /**
+   * IMPORTANT BUSINESS RULE:
+   * product.stock can be 0 or negative and the customer can still order.
+   * Example: stock = 0, customer orders 5 => database stock becomes -5.
+   *
+   * Cart/order is blocked only when admin/moderator manually marks product unavailable:
+   * - isPublished false
+   * - inStock false
+   * - stockStatus OUT_OF_STOCK
+   * - stockStatus COMING_SOON
+   */
+
+  if (product.isPublished === false) return false;
+  if (product.inStock === false) return false;
+  if (isManualStockBlocked(product.stockStatus)) return false;
+
+  return true;
 }
 
 export function getStockStatusLabel(status?: StockStatus) {
@@ -291,4 +327,10 @@ export function getProductBadges(product: Product): string[] {
   if (product.isFlashSale) badges.push("Flash Sale");
 
   return badges;
+}
+
+export interface ProductInventoryFieldsPatch {
+  averageCost?: number | null;
+  lastPurchaseCost?: number | null;
+  stockValue?: number | null;
 }

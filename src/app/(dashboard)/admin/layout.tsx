@@ -13,9 +13,11 @@ import {
   FaHome,
   FaSignOutAlt,
   FaBars,
-  FaTimes,
   FaTachometerAlt,
   FaImages,
+  FaWarehouse,
+  FaChartLine,
+  FaStar,
 } from "react-icons/fa";
 import { signOut } from "next-auth/react";
 
@@ -37,7 +39,10 @@ const SidebarContent = ({
     { name: "Dashboard", href: "/admin", icon: FaTachometerAlt },
     { name: "Orders", href: "/admin/orders", icon: FaShoppingCart },
     { name: "Products", href: "/admin/products", icon: FaBox },
+    { name: "Inventory", href: "/admin/inventory", icon: FaWarehouse },
+    { name: "Profit Report", href: "/admin/reports/profit-loss", icon: FaChartLine },
     { name: "Users", href: "/admin/users", icon: FaUsers },
+    { name: "Reviews", href: "/admin/reviews", icon: FaStar },
     { name: "Banners", href: "/admin/banners", icon: FaImages },
   ];
 
@@ -75,11 +80,10 @@ const SidebarContent = ({
               key={item.href}
               href={item.href}
               onClick={handleLinkClick}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? "bg-orange-500/20 text-orange-500 border-r-2 border-orange-500"
-                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive
+                ? "bg-orange-500/20 text-orange-500 border-r-2 border-orange-500"
+                : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
             >
               <Icon size={20} />
               <span>{item.name}</span>
