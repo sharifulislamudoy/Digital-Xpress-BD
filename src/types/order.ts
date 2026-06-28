@@ -165,6 +165,52 @@ export function normalizeDistrictName(value?: string | null) {
   return (value || "").trim();
 }
 
+export function normalizeDistrictKey(value?: string | null) {
+  return normalizeDistrictName(value)
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export const bdDistrictAliases: Record<string, BdDistrict> = {
+  dhaka: "Dhaka City",
+  "dhaka city": "Dhaka City",
+  "dhaka sub urban": "Dhaka Sub-Urban",
+  "dhaka suburban": "Dhaka Sub-Urban",
+
+  bogura: "Bogra",
+  barisal: "Barishal",
+  chattogram: "Chittagong",
+  chatgptgram: "Chittagong",
+  jessore: "Jashore",
+  narsingdi: "Narshindi",
+  satkhira: "Shatkhira",
+  lakshmipur: "Laxmipur",
+  khagrachhari: "Khagrachori",
+  khagrachari: "Khagrachori",
+  "chapai nawabganj": "Chapainawabganj",
+  "cox bazar": "Cox's Bazar",
+  coxsbazar: "Cox's Bazar",
+  "moulvi bazar": "Moulvibazar",
+};
+
+export function resolveBdDistrictOption(
+  value?: string | null,
+): BdDistrict | "" {
+  const key = normalizeDistrictKey(value);
+  if (!key) return "";
+
+  const exact = bdDistrictOptions.find(
+    (district) => normalizeDistrictKey(district) === key,
+  );
+
+  if (exact) return exact;
+
+  return bdDistrictAliases[key] || "";
+}
+
 export function deliveryChargeMapFromSettings(
   settings: DeliveryChargeSetting[] = [],
 ) {
@@ -176,7 +222,14 @@ export function deliveryChargeMapFromSettings(
 
     if (!district || !Number.isFinite(charge)) return;
 
-    map.set(district.toLowerCase(), Math.max(Math.round(charge), 0));
+    const safeCharge = Math.max(Math.round(charge), 0);
+    const resolvedDistrict = resolveBdDistrictOption(district);
+
+    map.set(normalizeDistrictKey(district), safeCharge);
+
+    if (resolvedDistrict) {
+      map.set(normalizeDistrictKey(resolvedDistrict), safeCharge);
+    }
   });
 
   return map;
@@ -190,7 +243,18 @@ export function getDeliveryChargeByDistrictSettings(
   if (!districtName) return 0;
 
   const chargeMap = deliveryChargeMapFromSettings(settings);
-  return chargeMap.get(districtName.toLowerCase()) || 0;
+  const directCharge = chargeMap.get(normalizeDistrictKey(districtName));
+
+  if (typeof directCharge === "number") return directCharge;
+
+  const resolvedDistrict = resolveBdDistrictOption(districtName);
+
+  if (resolvedDistrict) {
+    const resolvedCharge = chargeMap.get(normalizeDistrictKey(resolvedDistrict));
+    if (typeof resolvedCharge === "number") return resolvedCharge;
+  }
+
+  return 0;
 }
 
 export function getDeliveryChargeByDistrict(
@@ -248,4 +312,5 @@ export interface OrderProfitFieldsPatch {
   netProfit?: number;
   inventoryRestoredAt?: string | null;
 }
+
 export default getDeliveryChargeByDistrict;

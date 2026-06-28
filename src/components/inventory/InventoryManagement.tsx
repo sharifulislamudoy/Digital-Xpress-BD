@@ -779,8 +779,8 @@ export default function InventoryManagement({
                 <th className="px-4 py-4">MRP</th>
                 <th className="px-4 py-4">Cost</th>
                 <th className="px-4 py-4">Sell</th>
-                <th className="px-4 py-4">Stock Value</th>
-                <th className="px-4 py-4">Profit/Unit</th>
+                <th className="px-4 py-4">Stock</th>
+                <th className="px-4 py-4">Profit</th>
                 <th className="px-4 py-4 text-right">Action</th>
               </tr>
             </thead>
