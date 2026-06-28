@@ -2,7 +2,14 @@
 
 "use client";
 
-import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChangeEvent,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -23,7 +30,6 @@ interface ProductFormPageProps {
 }
 
 type RelationMode = "existing" | "new";
-type SubCategoryMode = "none" | "existing" | "new";
 
 type ProductFormState = {
   name: string;
@@ -140,7 +146,6 @@ const productTypeOptions: { value: ProductType; label: string }[] = [
   { value: "single", label: "Single Product" },
   { value: "combo", label: "Combo Product" },
 ];
-
 
 const stockStatusOptions: { value: StockStatus; label: string }[] = [
   { value: "IN_STOCK", label: "In stock" },
@@ -376,7 +381,6 @@ function datetimeLocal(value?: string | null) {
   return local.toISOString().slice(0, 16);
 }
 
-
 function formFromProduct(product: Product): ProductFormState {
   return {
     ...defaultForm,
@@ -484,7 +488,15 @@ function formFromProduct(product: Product): ProductFormState {
   };
 }
 
-function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
+function Section({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  note?: string;
+  children: ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-gray-800 bg-black p-4">
       <div className="mb-4">
@@ -515,7 +527,10 @@ function TextField({
 }) {
   return (
     <div>
-      <label className={labelClass}>{label}{required ? " *" : ""}</label>
+      <label className={labelClass}>
+        {label}
+        {required ? " *" : ""}
+      </label>
       <input
         type={type}
         value={value}
@@ -547,7 +562,10 @@ function TextAreaField({
 }) {
   return (
     <div>
-      <label className={labelClass}>{label}{required ? " *" : ""}</label>
+      <label className={labelClass}>
+        {label}
+        {required ? " *" : ""}
+      </label>
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -607,22 +625,33 @@ function SwitchField({
     >
       <span>
         <span className="block text-sm font-medium text-gray-200">{label}</span>
-        {note && <span className="mt-1 block text-xs text-gray-500">{note}</span>}
+        {note && (
+          <span className="mt-1 block text-xs text-gray-500">{note}</span>
+        )}
       </span>
-      <span className={`relative h-7 w-12 rounded-full transition ${checked ? "bg-orange-500" : "bg-gray-700"}`}>
-        <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${checked ? "left-6" : "left-1"}`} />
+      <span
+        className={`relative h-7 w-12 rounded-full transition ${checked ? "bg-orange-500" : "bg-gray-700"}`}
+      >
+        <span
+          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${checked ? "left-6" : "left-1"}`}
+        />
       </span>
     </button>
   );
 }
 
-export default function ProductFormPage({ mode, panelType, productId }: ProductFormPageProps) {
+export default function ProductFormPage({
+  mode,
+  panelType,
+  productId,
+}: ProductFormPageProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const accessToken = (session?.user as any)?.accessToken;
 
   const isEdit = mode === "edit";
-  const listHref = panelType === "admin" ? "/admin/products" : "/moderator/products";
+  const listHref =
+    panelType === "admin" ? "/admin/products" : "/moderator/products";
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -631,13 +660,8 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
   const [brands, setBrands] = useState<ProductBrand[]>([]);
   const [initialProduct, setInitialProduct] = useState<Product | null>(null);
 
-  const [categoryMode, setCategoryMode] = useState<RelationMode>("existing");
   const [categoryId, setCategoryId] = useState("");
-  const [categoryName, setCategoryName] = useState("");
-
-  const [subCategoryMode, setSubCategoryMode] = useState<SubCategoryMode>("none");
   const [subCategoryId, setSubCategoryId] = useState("");
-  const [subCategoryName, setSubCategoryName] = useState("");
 
   const [brandMode, setBrandMode] = useState<RelationMode>("existing");
   const [brandId, setBrandId] = useState("");
@@ -656,22 +680,34 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
   const [hoverPreview, setHoverPreview] = useState("");
   const [videoPreview, setVideoPreview] = useState("");
   const [sizeChartPreview, setSizeChartPreview] = useState("");
-  const [removedExtraImageIds, setRemovedExtraImageIds] = useState<string[]>([]);
+  const [removedExtraImageIds, setRemovedExtraImageIds] = useState<string[]>(
+    [],
+  );
 
   const authHeaders = useMemo(
     () => ({
       Authorization: `Bearer ${accessToken}`,
     }),
-    [accessToken]
+    [accessToken],
   );
 
-  const subCategories = useMemo(() => {
-    return categories.find((category) => category.id === categoryId)?.subCategories || [];
+  const selectedCategory = useMemo(() => {
+    return categories.find((category) => category.id === categoryId) || null;
   }, [categories, categoryId]);
 
-  const sellingPricePreview = useMemo(() => Number(form.sellingPrice) || 0, [form.sellingPrice]);
+  const subCategories = useMemo(() => {
+    return selectedCategory?.subCategories || [];
+  }, [selectedCategory]);
 
-  const setField = <K extends keyof ProductFormState>(field: K, value: ProductFormState[K]) => {
+  const sellingPricePreview = useMemo(
+    () => Number(form.sellingPrice) || 0,
+    [form.sellingPrice],
+  );
+
+  const setField = <K extends keyof ProductFormState>(
+    field: K,
+    value: ProductFormState[K],
+  ) => {
     setForm((previous) => ({ ...previous, [field]: value }));
   };
 
@@ -694,9 +730,12 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
 
         setLoading(true);
 
-        const metaResponse = await fetch(`${API_BASE}/api/v1/products/meta`, {
-          cache: "no-store",
-        });
+        const metaResponse = await fetch(
+          `${API_BASE}/api/v1/products/meta?scope=admin`,
+          {
+            cache: "no-store",
+          },
+        );
         const metaData = await metaResponse.json();
 
         if (!metaResponse.ok || !metaData.success) {
@@ -712,10 +751,9 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
         setBrands(loadedBrands);
 
         if (loadedCategories.length > 0) {
-          setCategoryMode("existing");
           setCategoryId(loadedCategories[0].id);
         } else {
-          setCategoryMode("new");
+          setCategoryId("");
         }
 
         if (loadedBrands.length > 0) {
@@ -737,10 +775,13 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
             return;
           }
 
-          const productResponse = await fetch(`${API_BASE}/api/v1/products/admin/${productId}`, {
-            headers: authHeaders,
-            cache: "no-store",
-          });
+          const productResponse = await fetch(
+            `${API_BASE}/api/v1/products/admin/${productId}`,
+            {
+              headers: authHeaders,
+              cache: "no-store",
+            },
+          );
           const productData = await productResponse.json();
 
           if (!productResponse.ok || !productData.success) {
@@ -753,12 +794,19 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
 
           setInitialProduct(product);
           setForm(formFromProduct(product));
-          setCategoryMode("existing");
-          setCategoryId(product.category?.id || product.categoryId || loadedCategories[0]?.id || "");
-          setSubCategoryMode(product.subCategory?.id ? "existing" : "none");
-          setSubCategoryId(product.subCategory?.id || product.subCategoryId || "");
+          setCategoryId(
+            product.category?.id ||
+              product.categoryId ||
+              loadedCategories[0]?.id ||
+              "",
+          );
+          setSubCategoryId(
+            product.subCategory?.id || product.subCategoryId || "",
+          );
           setBrandMode("existing");
-          setBrandId(product.brand?.id || product.brandId || loadedBrands[0]?.id || "");
+          setBrandId(
+            product.brand?.id || product.brandId || loadedBrands[0]?.id || "",
+          );
 
           setMainPreview(product.mainImageUrl || "");
           setHoverPreview(product.hoverImageUrl || "");
@@ -777,14 +825,10 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
   }, [accessToken, authHeaders, isEdit, listHref, productId, router, status]);
 
   useEffect(() => {
-    if (categoryMode === "new") {
-      setSubCategoryMode("none");
-      setSubCategoryId("");
-    }
-  }, [categoryMode]);
-
-  useEffect(() => {
-    if (subCategoryId && !subCategories.some((item) => item.id === subCategoryId)) {
+    if (
+      subCategoryId &&
+      !subCategories.some((item) => item.id === subCategoryId)
+    ) {
       setSubCategoryId("");
     }
   }, [subCategories, subCategoryId]);
@@ -793,7 +837,7 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
     event: ChangeEvent<HTMLInputElement>,
     setter: (file: File | null) => void,
     previewSetter: (url: string) => void,
-    fallback = ""
+    fallback = "",
   ) {
     const file = event.target.files?.[0] || null;
     setter(file);
@@ -812,7 +856,9 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
       return;
     }
 
-    const imageFiles = selectedFiles.filter((file) => file.type.startsWith("image/"));
+    const imageFiles = selectedFiles.filter((file) =>
+      file.type.startsWith("image/"),
+    );
 
     if (imageFiles.length === 0) {
       toast.error("Please select image files only");
@@ -822,14 +868,18 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
 
     setExtraImages((previous) => {
       const previousKeys = new Set(previous.map(getFileKey));
-      const uniqueNewFiles = imageFiles.filter((file) => !previousKeys.has(getFileKey(file)));
+      const uniqueNewFiles = imageFiles.filter(
+        (file) => !previousKeys.has(getFileKey(file)),
+      );
 
       if (uniqueNewFiles.length === 0) {
         toast.error("Selected image already added");
         return previous;
       }
 
-      toast.success(`${uniqueNewFiles.length} extra image${uniqueNewFiles.length > 1 ? "s" : ""} added`);
+      toast.success(
+        `${uniqueNewFiles.length} extra image${uniqueNewFiles.length > 1 ? "s" : ""} added`,
+      );
       return [...previous, ...uniqueNewFiles];
     });
 
@@ -837,14 +887,16 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
   }
 
   function removeNewExtraImage(index: number) {
-    setExtraImages((previous) => previous.filter((_, currentIndex) => currentIndex !== index));
+    setExtraImages((previous) =>
+      previous.filter((_, currentIndex) => currentIndex !== index),
+    );
   }
 
   function toggleRemoveExistingExtraImage(id: string) {
     setRemovedExtraImageIds((previous) =>
       previous.includes(id)
         ? previous.filter((item) => item !== id)
-        : [...previous, id]
+        : [...previous, id],
     );
   }
 
@@ -859,13 +911,10 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
       return false;
     }
 
-    if (categoryMode === "existing" && !categoryId) {
-      toast.error("Select a category");
-      return false;
-    }
-
-    if (categoryMode === "new" && !categoryName.trim()) {
-      toast.error("Type new category name");
+    if (!categoryId) {
+      toast.error(
+        "Select a category. Create category from Product Management first.",
+      );
       return false;
     }
 
@@ -876,16 +925,6 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
 
     if (brandMode === "new" && !brandName.trim()) {
       toast.error("Type new brand name");
-      return false;
-    }
-
-    if (subCategoryMode === "existing" && !subCategoryId) {
-      toast.error("Select a sub-category");
-      return false;
-    }
-
-    if (subCategoryMode === "new" && !subCategoryName.trim()) {
-      toast.error("Type new sub-category name");
       return false;
     }
 
@@ -933,18 +972,10 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
         formData.append(key, String(Boolean(form[key])));
       }
 
-      if (categoryMode === "existing") {
-        formData.append("categoryId", categoryId);
-      } else {
-        formData.append("categoryName", categoryName.trim());
-      }
+      formData.append("categoryId", categoryId);
 
-      if (subCategoryMode === "existing") {
+      if (subCategoryId) {
         formData.append("subCategoryId", subCategoryId);
-      }
-
-      if (subCategoryMode === "new") {
-        formData.append("subCategoryName", subCategoryName.trim());
       }
 
       if (brandMode === "existing") {
@@ -953,7 +984,10 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
         formData.append("brandName", brandName.trim());
       }
 
-      formData.append("removeExtraImageIds", JSON.stringify(removedExtraImageIds));
+      formData.append(
+        "removeExtraImageIds",
+        JSON.stringify(removedExtraImageIds),
+      );
 
       if (mainImage) formData.append("mainImage", mainImage);
       if (hoverImage) formData.append("hoverImage", hoverImage);
@@ -984,7 +1018,11 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
         return;
       }
 
-      toast.success(isEdit ? "Product updated successfully" : "Product created successfully");
+      toast.success(
+        isEdit
+          ? "Product updated successfully"
+          : "Product created successfully",
+      );
       router.push(listHref);
       router.refresh();
     } catch (error) {
@@ -1008,10 +1046,12 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            {isEdit ? "Edit Product" : "Create Product"} {panelType === "moderator" ? "(Moderator)" : ""}
+            {isEdit ? "Edit Product" : "Create Product"}{" "}
+            {panelType === "moderator" ? "(Moderator)" : ""}
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Clean product form with every schema field grouped into maintainable sections.
+            Clean product form with every schema field grouped into maintainable
+            sections.
           </p>
         </div>
 
@@ -1029,7 +1069,8 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
             {isEdit ? "Update Product Details" : "New Product Details"}
           </h2>
           <p className="text-sm text-gray-500">
-            SKU is auto generated if empty. Slug is auto generated from name if empty.
+            SKU is auto generated if empty. Slug is auto generated from name if
+            empty.
           </p>
         </div>
 
@@ -1037,76 +1078,177 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
           <div className="space-y-4">
             <Section title="Basic Information">
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextField label="Product Name" required value={form.name} onChange={(value) => setField("name", value)} placeholder="iPhone 15 Pro Max" />
-                <SelectField label="Product Type" value={form.productType} onChange={(value) => setField("productType", value)} options={productTypeOptions} />
-                <TextField label="Slug" value={form.slug} onChange={(value) => setField("slug", value)} placeholder="Auto generated if empty" />
-                <TextField label="SKU" value={form.sku} onChange={(value) => setField("sku", value)} placeholder="Auto generated 0001 if empty" />
-                <TextField label="Product Code" value={form.productCode} onChange={(value) => setField("productCode", value)} placeholder="Internal product code" />
-                <TextField label="Barcode" value={form.barcode} onChange={(value) => setField("barcode", value)} placeholder="UPC/EAN barcode" />
-                <TextField label="Model Name" value={form.modelName} onChange={(value) => setField("modelName", value)} placeholder="A3108 / SM-S928B" />
+                <TextField
+                  label="Product Name"
+                  required
+                  value={form.name}
+                  onChange={(value) => setField("name", value)}
+                  placeholder="iPhone 15 Pro Max"
+                />
+                <SelectField
+                  label="Product Type"
+                  value={form.productType}
+                  onChange={(value) => setField("productType", value)}
+                  options={productTypeOptions}
+                />
+                <TextField
+                  label="Slug"
+                  value={form.slug}
+                  onChange={(value) => setField("slug", value)}
+                  placeholder="Auto generated if empty"
+                />
+                <TextField
+                  label="SKU"
+                  value={form.sku}
+                  onChange={(value) => setField("sku", value)}
+                  placeholder="Auto generated 0001 if empty"
+                />
+                <TextField
+                  label="Product Code"
+                  value={form.productCode}
+                  onChange={(value) => setField("productCode", value)}
+                  placeholder="Internal product code"
+                />
+                <TextField
+                  label="Barcode"
+                  value={form.barcode}
+                  onChange={(value) => setField("barcode", value)}
+                  placeholder="UPC/EAN barcode"
+                />
+                <TextField
+                  label="Model Name"
+                  value={form.modelName}
+                  onChange={(value) => setField("modelName", value)}
+                  placeholder="A3108 / SM-S928B"
+                />
               </div>
             </Section>
 
-            <Section title="Category, Sub-category & Brand">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-300">Category *</label>
-                    <button
-                      type="button"
-                      onClick={() => setCategoryMode((previous) => previous === "existing" ? "new" : "existing")}
-                      className="text-xs font-semibold text-orange-400 hover:text-orange-300"
+            <Section
+              title="Category, Sub-category & Brand"
+              note="Category/sub-category create হবে Product Management page এর modal থেকে. এখানে শুধু select করা যাবে."
+            >
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-gray-800 bg-gray-950 p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-white">
+                        Category *
+                      </h4>
+                      <p className="mt-1 text-xs text-gray-500">
+                        নতুন category দরকার হলে Product Management page থেকে
+                        Create Category & Sub-category button ব্যবহার করো.
+                      </p>
+                    </div>
+                    <Link
+                      href={listHref}
+                      className="shrink-0 rounded-lg border border-orange-500/40 px-3 py-2 text-xs font-semibold text-orange-300 transition hover:bg-orange-500/10"
                     >
-                      {categoryMode === "existing" ? "Add new" : "Use existing"}
-                    </button>
+                      Manage Category
+                    </Link>
                   </div>
 
-                  {categoryMode === "existing" ? (
-                    <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className={inputClass}>
+                  {categories.length === 0 ? (
+                    <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+                      No category found. আগে Product Management থেকে category
+                      create করো, তারপর product create/update করো.
+                    </div>
+                  ) : (
+                    <select
+                      value={categoryId}
+                      onChange={(event) => {
+                        setCategoryId(event.target.value);
+                        setSubCategoryId("");
+                      }}
+                      className={inputClass}
+                    >
                       <option value="">Select category</option>
                       {categories.map((category) => (
-                        <option key={category.id} value={category.id}>{category.name}</option>
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
                       ))}
                     </select>
-                  ) : (
-                    <input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} className={inputClass} placeholder="New category name" />
+                  )}
+
+                  {selectedCategory && (
+                    <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-800 bg-black p-3">
+                      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg border border-gray-800 bg-gray-950">
+                        {selectedCategory.imageUrl ? (
+                          <img
+                            src={selectedCategory.imageUrl}
+                            alt={selectedCategory.name}
+                            className="h-full w-full object-contain p-1"
+                          />
+                        ) : selectedCategory.iconSvg ? (
+                          <span
+                            className="text-orange-400 [&_svg]:h-6 [&_svg]:w-6"
+                            dangerouslySetInnerHTML={{
+                              __html: selectedCategory.iconSvg,
+                            }}
+                          />
+                        ) : (
+                          <span className="text-[10px] text-gray-600">
+                            No icon
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          {selectedCategory.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          /{selectedCategory.slug}
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-300">Sub-category</label>
-                    <select value={subCategoryMode} onChange={(event) => setSubCategoryMode(event.target.value as SubCategoryMode)} className="rounded-lg border border-gray-800 bg-black px-2 py-1 text-xs text-gray-300 outline-none focus:border-orange-500">
-                      <option value="none">None</option>
-                      {categoryMode === "existing" && <option value="existing">Existing</option>}
-                      <option value="new">New</option>
-                    </select>
+                <div className="rounded-2xl border border-gray-800 bg-gray-950 p-4">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-white">
+                      Sub-category
+                    </h4>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Optional. Selected category অনুযায়ী sub-category list
+                      দেখাবে.
+                    </p>
                   </div>
 
-                  {subCategoryMode === "none" && (
-                    <div className="grid h-[46px] place-items-center rounded-xl border border-gray-800 bg-black text-sm text-gray-600">No sub-category</div>
-                  )}
+                  <select
+                    value={subCategoryId}
+                    onChange={(event) => setSubCategoryId(event.target.value)}
+                    disabled={!categoryId || subCategories.length === 0}
+                    className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    <option value="">No sub-category</option>
+                    {subCategories.map((subCategory) => (
+                      <option key={subCategory.id} value={subCategory.id}>
+                        {subCategory.name}
+                      </option>
+                    ))}
+                  </select>
 
-                  {subCategoryMode === "existing" && (
-                    <select value={subCategoryId} onChange={(event) => setSubCategoryId(event.target.value)} className={inputClass}>
-                      <option value="">Select sub-category</option>
-                      {subCategories.map((subCategory) => (
-                        <option key={subCategory.id} value={subCategory.id}>{subCategory.name}</option>
-                      ))}
-                    </select>
-                  )}
-
-                  {subCategoryMode === "new" && (
-                    <input value={subCategoryName} onChange={(event) => setSubCategoryName(event.target.value)} className={inputClass} placeholder="New sub-category name" />
+                  {categoryId && subCategories.length === 0 && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      এই category এর under এ এখনো কোনো sub-category নেই.
+                    </p>
                   )}
                 </div>
 
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-300">Brand *</label>
+                <div className="rounded-2xl border border-gray-800 bg-gray-950 p-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <label className="block text-sm font-semibold text-white">
+                      Brand *
+                    </label>
                     <button
                       type="button"
-                      onClick={() => setBrandMode((previous) => previous === "existing" ? "new" : "existing")}
+                      onClick={() =>
+                        setBrandMode((previous) =>
+                          previous === "existing" ? "new" : "existing",
+                        )
+                      }
                       className="text-xs font-semibold text-orange-400 hover:text-orange-300"
                     >
                       {brandMode === "existing" ? "Add new" : "Use existing"}
@@ -1114,14 +1256,25 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
                   </div>
 
                   {brandMode === "existing" ? (
-                    <select value={brandId} onChange={(event) => setBrandId(event.target.value)} className={inputClass}>
+                    <select
+                      value={brandId}
+                      onChange={(event) => setBrandId(event.target.value)}
+                      className={inputClass}
+                    >
                       <option value="">Select brand</option>
                       {brands.map((brand) => (
-                        <option key={brand.id} value={brand.id}>{brand.name}</option>
+                        <option key={brand.id} value={brand.id}>
+                          {brand.name}
+                        </option>
                       ))}
                     </select>
                   ) : (
-                    <input value={brandName} onChange={(event) => setBrandName(event.target.value)} className={inputClass} placeholder="New brand name" />
+                    <input
+                      value={brandName}
+                      onChange={(event) => setBrandName(event.target.value)}
+                      className={inputClass}
+                      placeholder="New brand name"
+                    />
                   )}
                 </div>
               </div>
@@ -1129,125 +1282,442 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
 
             <Section title="Description & Search Content">
               <div className="space-y-4">
-                <TextAreaField label="Short Description" value={form.shortDescription} onChange={(value) => setField("shortDescription", value)} rows={2} placeholder="Small summary for cards and details page" />
-                <TextAreaField label="Full Description" required value={form.description} onChange={(value) => setField("description", value)} rows={6} placeholder="Write full product description" />
-                <TextField label="Key Features" value={form.keyFeatures} onChange={(value) => setField("keyFeatures", value)} placeholder="Comma separated: 5G, OLED, 48MP camera" />
-                <TextField label="Highlights" value={form.highlights} onChange={(value) => setField("highlights", value)} placeholder="Comma separated: Fast charging, Warranty" />
-                <TextAreaField label="Specifications JSON" value={form.specifications} onChange={(value) => setField("specifications", value)} mono placeholder='{"Display":"6.7 inch","RAM":"8GB"}' />
-                <TextField label="Tags" value={form.tags} onChange={(value) => setField("tags", value)} placeholder="Comma separated: mobile, apple, smartphone" />
-                <TextField label="Search Keywords" value={form.searchKeywords} onChange={(value) => setField("searchKeywords", value)} placeholder="Comma separated: buy iphone, best phone" />
+                <TextAreaField
+                  label="Short Description"
+                  value={form.shortDescription}
+                  onChange={(value) => setField("shortDescription", value)}
+                  rows={2}
+                  placeholder="Small summary for cards and details page"
+                />
+                <TextAreaField
+                  label="Full Description"
+                  required
+                  value={form.description}
+                  onChange={(value) => setField("description", value)}
+                  rows={6}
+                  placeholder="Write full product description"
+                />
+                <TextField
+                  label="Key Features"
+                  value={form.keyFeatures}
+                  onChange={(value) => setField("keyFeatures", value)}
+                  placeholder="Comma separated: 5G, OLED, 48MP camera"
+                />
+                <TextField
+                  label="Highlights"
+                  value={form.highlights}
+                  onChange={(value) => setField("highlights", value)}
+                  placeholder="Comma separated: Fast charging, Warranty"
+                />
+                <TextAreaField
+                  label="Specifications JSON"
+                  value={form.specifications}
+                  onChange={(value) => setField("specifications", value)}
+                  mono
+                  placeholder='{"Display":"6.7 inch","RAM":"8GB"}'
+                />
+                <TextField
+                  label="Tags"
+                  value={form.tags}
+                  onChange={(value) => setField("tags", value)}
+                  placeholder="Comma separated: mobile, apple, smartphone"
+                />
+                <TextField
+                  label="Search Keywords"
+                  value={form.searchKeywords}
+                  onChange={(value) => setField("searchKeywords", value)}
+                  placeholder="Comma separated: buy iphone, best phone"
+                />
               </div>
             </Section>
 
             <Section title="Pricing">
               <div className="grid gap-4 sm:grid-cols-3">
-                <TextField label="MRP" required type="number" value={form.mrp} onChange={(value) => setField("mrp", value)} />
-                <TextField label="Cost Price" type="number" value={form.costPrice} onChange={(value) => setField("costPrice", value)} placeholder="Internal cost only" />
-                <TextField label="Selling Price" required type="number" value={form.sellingPrice} onChange={(value) => setField("sellingPrice", value)} placeholder="Customer price" />
+                <TextField
+                  label="MRP"
+                  required
+                  type="number"
+                  value={form.mrp}
+                  onChange={(value) => setField("mrp", value)}
+                />
+                <TextField
+                  label="Cost Price"
+                  type="number"
+                  value={form.costPrice}
+                  onChange={(value) => setField("costPrice", value)}
+                  placeholder="Internal cost only"
+                />
+                <TextField
+                  label="Selling Price"
+                  required
+                  type="number"
+                  value={form.sellingPrice}
+                  onChange={(value) => setField("sellingPrice", value)}
+                  placeholder="Customer price"
+                />
               </div>
 
               <div className="mt-4 rounded-xl border border-orange-500/20 bg-orange-500/10 p-4">
-                <p className="text-sm text-gray-400">Final selling price preview</p>
-                <p className="text-2xl font-bold text-orange-400">{formatPrice(sellingPricePreview)}</p>
-                <p className="mt-1 text-xs text-gray-500">Cost price is internal only. Selling price is saved directly and is not calculated from cost.</p>
+                <p className="text-sm text-gray-400">
+                  Final selling price preview
+                </p>
+                <p className="text-2xl font-bold text-orange-400">
+                  {formatPrice(sellingPricePreview)}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Cost price is internal only. Selling price is saved directly
+                  and is not calculated from cost.
+                </p>
               </div>
             </Section>
 
             <Section title="Stock & Status">
               <div className="grid gap-4 sm:grid-cols-3">
-                <TextField label="Stock Quantity" type="number" value={form.stock} onChange={(value) => setField("stock", value)} />
-                <SelectField label="Stock Status" value={form.stockStatus} onChange={(value) => setField("stockStatus", value)} options={stockStatusOptions} />
-                <TextField label="Low Stock Alert Qty" type="number" value={form.lowStockAlertQuantity} onChange={(value) => setField("lowStockAlertQuantity", value)} />
-                <TextField label="Sold Quantity" type="number" value={form.soldQuantity} onChange={(value) => setField("soldQuantity", value)} />
-                <TextField label="Reserved Quantity" type="number" value={form.reservedQuantity} onChange={(value) => setField("reservedQuantity", value)} />
+                <TextField
+                  label="Stock Quantity"
+                  type="number"
+                  value={form.stock}
+                  onChange={(value) => setField("stock", value)}
+                />
+                <SelectField
+                  label="Stock Status"
+                  value={form.stockStatus}
+                  onChange={(value) => setField("stockStatus", value)}
+                  options={stockStatusOptions}
+                />
+                <TextField
+                  label="Low Stock Alert Qty"
+                  type="number"
+                  value={form.lowStockAlertQuantity}
+                  onChange={(value) => setField("lowStockAlertQuantity", value)}
+                />
+                <TextField
+                  label="Sold Quantity"
+                  type="number"
+                  value={form.soldQuantity}
+                  onChange={(value) => setField("soldQuantity", value)}
+                />
+                <TextField
+                  label="Reserved Quantity"
+                  type="number"
+                  value={form.reservedQuantity}
+                  onChange={(value) => setField("reservedQuantity", value)}
+                />
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <SwitchField label="In Stock" checked={form.inStock} onChange={(value) => setField("inStock", value)} />
-                <SwitchField label="Published" checked={form.isPublished} onChange={(value) => setField("isPublished", value)} />
-                <SwitchField label="Featured" checked={form.isFeatured} onChange={(value) => setField("isFeatured", value)} />
-                <SwitchField label="New Arrival" checked={form.isNewArrival} onChange={(value) => setField("isNewArrival", value)} />
-                <SwitchField label="Best Seller" checked={form.isBestSeller} onChange={(value) => setField("isBestSeller", value)} />
-                <SwitchField label="Trending" checked={form.isTrending} onChange={(value) => setField("isTrending", value)} />
-                <SwitchField label="Recommended" checked={form.isRecommended} onChange={(value) => setField("isRecommended", value)} />
-                <SwitchField label="Flash Sale" checked={form.isFlashSale} onChange={(value) => setField("isFlashSale", value)} />
+                <SwitchField
+                  label="In Stock"
+                  checked={form.inStock}
+                  onChange={(value) => setField("inStock", value)}
+                />
+                <SwitchField
+                  label="Published"
+                  checked={form.isPublished}
+                  onChange={(value) => setField("isPublished", value)}
+                />
+                <SwitchField
+                  label="Featured"
+                  checked={form.isFeatured}
+                  onChange={(value) => setField("isFeatured", value)}
+                />
+                <SwitchField
+                  label="New Arrival"
+                  checked={form.isNewArrival}
+                  onChange={(value) => setField("isNewArrival", value)}
+                />
+                <SwitchField
+                  label="Best Seller"
+                  checked={form.isBestSeller}
+                  onChange={(value) => setField("isBestSeller", value)}
+                />
+                <SwitchField
+                  label="Trending"
+                  checked={form.isTrending}
+                  onChange={(value) => setField("isTrending", value)}
+                />
+                <SwitchField
+                  label="Recommended"
+                  checked={form.isRecommended}
+                  onChange={(value) => setField("isRecommended", value)}
+                />
+                <SwitchField
+                  label="Flash Sale"
+                  checked={form.isFlashSale}
+                  onChange={(value) => setField("isFlashSale", value)}
+                />
               </div>
             </Section>
 
             <Section title="Warranty, Return & Delivery">
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextField label="Warranty Duration" value={form.warrantyDuration} onChange={(value) => setField("warrantyDuration", value)} placeholder="1 year" />
-                <TextField label="Warranty Details" value={form.warrantyDetails} onChange={(value) => setField("warrantyDetails", value)} />
-                <TextField label="Return Policy" value={form.returnPolicy} onChange={(value) => setField("returnPolicy", value)} />
-                <TextField label="Replacement Policy" value={form.replacementPolicy} onChange={(value) => setField("replacementPolicy", value)} />
-                <TextField label="Refund Policy" value={form.refundPolicy} onChange={(value) => setField("refundPolicy", value)} />
-                <TextField label="Delivery Info" value={form.deliveryInfo} onChange={(value) => setField("deliveryInfo", value)} />
-                <TextField label="Delivery Charge" type="number" value={form.deliveryCharge} onChange={(value) => setField("deliveryCharge", value)} />
-                <TextField label="Inside Dhaka Charge" type="number" value={form.insideDhakaDeliveryCharge} onChange={(value) => setField("insideDhakaDeliveryCharge", value)} />
-                <TextField label="Outside Dhaka Charge" type="number" value={form.outsideDhakaDeliveryCharge} onChange={(value) => setField("outsideDhakaDeliveryCharge", value)} />
-                <TextField label="Delivery Time" value={form.deliveryTime} onChange={(value) => setField("deliveryTime", value)} placeholder="2-3 business days" />
-                <TextField label="Free Delivery Min Amount" type="number" value={form.freeDeliveryMinAmount} onChange={(value) => setField("freeDeliveryMinAmount", value)} />
+                <TextField
+                  label="Warranty Duration"
+                  value={form.warrantyDuration}
+                  onChange={(value) => setField("warrantyDuration", value)}
+                  placeholder="1 year"
+                />
+                <TextField
+                  label="Warranty Details"
+                  value={form.warrantyDetails}
+                  onChange={(value) => setField("warrantyDetails", value)}
+                />
+                <TextField
+                  label="Return Policy"
+                  value={form.returnPolicy}
+                  onChange={(value) => setField("returnPolicy", value)}
+                />
+                <TextField
+                  label="Replacement Policy"
+                  value={form.replacementPolicy}
+                  onChange={(value) => setField("replacementPolicy", value)}
+                />
+                <TextField
+                  label="Refund Policy"
+                  value={form.refundPolicy}
+                  onChange={(value) => setField("refundPolicy", value)}
+                />
+                <TextField
+                  label="Delivery Info"
+                  value={form.deliveryInfo}
+                  onChange={(value) => setField("deliveryInfo", value)}
+                />
+                <TextField
+                  label="Delivery Charge"
+                  type="number"
+                  value={form.deliveryCharge}
+                  onChange={(value) => setField("deliveryCharge", value)}
+                />
+                <TextField
+                  label="Inside Dhaka Charge"
+                  type="number"
+                  value={form.insideDhakaDeliveryCharge}
+                  onChange={(value) =>
+                    setField("insideDhakaDeliveryCharge", value)
+                  }
+                />
+                <TextField
+                  label="Outside Dhaka Charge"
+                  type="number"
+                  value={form.outsideDhakaDeliveryCharge}
+                  onChange={(value) =>
+                    setField("outsideDhakaDeliveryCharge", value)
+                  }
+                />
+                <TextField
+                  label="Delivery Time"
+                  value={form.deliveryTime}
+                  onChange={(value) => setField("deliveryTime", value)}
+                  placeholder="2-3 business days"
+                />
+                <TextField
+                  label="Free Delivery Min Amount"
+                  type="number"
+                  value={form.freeDeliveryMinAmount}
+                  onChange={(value) => setField("freeDeliveryMinAmount", value)}
+                />
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <SwitchField label="Cash on Delivery" checked={form.cashOnDelivery} onChange={(value) => setField("cashOnDelivery", value)} />
-                <SwitchField label="Free Delivery" checked={form.freeDelivery} onChange={(value) => setField("freeDelivery", value)} />
+                <SwitchField
+                  label="Cash on Delivery"
+                  checked={form.cashOnDelivery}
+                  onChange={(value) => setField("cashOnDelivery", value)}
+                />
+                <SwitchField
+                  label="Free Delivery"
+                  checked={form.freeDelivery}
+                  onChange={(value) => setField("freeDelivery", value)}
+                />
               </div>
             </Section>
 
             <Section title="Package Information">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <TextField label="Package Includes" value={form.packageIncludes} onChange={(value) => setField("packageIncludes", value)} placeholder="Comma separated: Phone, Charger, Cable" />
+                  <TextField
+                    label="Package Includes"
+                    value={form.packageIncludes}
+                    onChange={(value) => setField("packageIncludes", value)}
+                    placeholder="Comma separated: Phone, Charger, Cable"
+                  />
                 </div>
-                <TextField label="Package Weight" value={form.packageWeight} onChange={(value) => setField("packageWeight", value)} placeholder="500g" />
-                <TextField label="Package Dimensions" value={form.packageDimensions} onChange={(value) => setField("packageDimensions", value)} placeholder="20x10x5 cm" />
+                <TextField
+                  label="Package Weight"
+                  value={form.packageWeight}
+                  onChange={(value) => setField("packageWeight", value)}
+                  placeholder="500g"
+                />
+                <TextField
+                  label="Package Dimensions"
+                  value={form.packageDimensions}
+                  onChange={(value) => setField("packageDimensions", value)}
+                  placeholder="20x10x5 cm"
+                />
               </div>
             </Section>
 
-            <Section title="Supplier & Internal Note" note="This section is returned only from admin product API.">
+            <Section
+              title="Supplier & Internal Note"
+              note="This section is returned only from admin product API."
+            >
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextField label="Supplier Name" value={form.supplierName} onChange={(value) => setField("supplierName", value)} />
-                <TextField label="Supplier Phone" value={form.supplierPhone} onChange={(value) => setField("supplierPhone", value)} />
-                <TextField label="Supplier Email" value={form.supplierEmail} onChange={(value) => setField("supplierEmail", value)} />
-                <TextField label="Supplier Address" value={form.supplierAddress} onChange={(value) => setField("supplierAddress", value)} />
-                <TextField label="Supplier Invoice Number" value={form.supplierInvoiceNumber} onChange={(value) => setField("supplierInvoiceNumber", value)} />
-                <TextField label="Internal Note" value={form.internalNote} onChange={(value) => setField("internalNote", value)} />
+                <TextField
+                  label="Supplier Name"
+                  value={form.supplierName}
+                  onChange={(value) => setField("supplierName", value)}
+                />
+                <TextField
+                  label="Supplier Phone"
+                  value={form.supplierPhone}
+                  onChange={(value) => setField("supplierPhone", value)}
+                />
+                <TextField
+                  label="Supplier Email"
+                  value={form.supplierEmail}
+                  onChange={(value) => setField("supplierEmail", value)}
+                />
+                <TextField
+                  label="Supplier Address"
+                  value={form.supplierAddress}
+                  onChange={(value) => setField("supplierAddress", value)}
+                />
+                <TextField
+                  label="Supplier Invoice Number"
+                  value={form.supplierInvoiceNumber}
+                  onChange={(value) => setField("supplierInvoiceNumber", value)}
+                />
+                <TextField
+                  label="Internal Note"
+                  value={form.internalNote}
+                  onChange={(value) => setField("internalNote", value)}
+                />
               </div>
             </Section>
 
             <Section title="SEO & Metadata">
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextField label="SEO Title" value={form.seoTitle} onChange={(value) => setField("seoTitle", value)} />
-                <TextField label="SEO Description" value={form.seoDescription} onChange={(value) => setField("seoDescription", value)} />
-                <TextField label="SEO Keywords" value={form.seoKeywords} onChange={(value) => setField("seoKeywords", value)} placeholder="Comma separated" />
-                <TextField label="Focus Keyword" value={form.focusKeyword} onChange={(value) => setField("focusKeyword", value)} />
-                <TextField label="Canonical URL" value={form.canonicalUrl} onChange={(value) => setField("canonicalUrl", value)} />
-                <TextField label="Meta Robots" value={form.metaRobots} onChange={(value) => setField("metaRobots", value)} />
-                <TextField label="OG Title" value={form.ogTitle} onChange={(value) => setField("ogTitle", value)} />
-                <TextField label="OG Description" value={form.ogDescription} onChange={(value) => setField("ogDescription", value)} />
-                <TextField label="OG Image URL" value={form.ogImage} onChange={(value) => setField("ogImage", value)} />
-                <TextAreaField label="Schema JSON" value={form.schemaJson} onChange={(value) => setField("schemaJson", value)} mono placeholder='{"@context":"https://schema.org","@type":"Product"}' />
+                <TextField
+                  label="SEO Title"
+                  value={form.seoTitle}
+                  onChange={(value) => setField("seoTitle", value)}
+                />
+                <TextField
+                  label="SEO Description"
+                  value={form.seoDescription}
+                  onChange={(value) => setField("seoDescription", value)}
+                />
+                <TextField
+                  label="SEO Keywords"
+                  value={form.seoKeywords}
+                  onChange={(value) => setField("seoKeywords", value)}
+                  placeholder="Comma separated"
+                />
+                <TextField
+                  label="Focus Keyword"
+                  value={form.focusKeyword}
+                  onChange={(value) => setField("focusKeyword", value)}
+                />
+                <TextField
+                  label="Canonical URL"
+                  value={form.canonicalUrl}
+                  onChange={(value) => setField("canonicalUrl", value)}
+                />
+                <TextField
+                  label="Meta Robots"
+                  value={form.metaRobots}
+                  onChange={(value) => setField("metaRobots", value)}
+                />
+                <TextField
+                  label="OG Title"
+                  value={form.ogTitle}
+                  onChange={(value) => setField("ogTitle", value)}
+                />
+                <TextField
+                  label="OG Description"
+                  value={form.ogDescription}
+                  onChange={(value) => setField("ogDescription", value)}
+                />
+                <TextField
+                  label="OG Image URL"
+                  value={form.ogImage}
+                  onChange={(value) => setField("ogImage", value)}
+                />
+                <TextAreaField
+                  label="Schema JSON"
+                  value={form.schemaJson}
+                  onChange={(value) => setField("schemaJson", value)}
+                  mono
+                  placeholder='{"@context":"https://schema.org","@type":"Product"}'
+                />
               </div>
             </Section>
 
-            <Section title="Stats & Audit Values" note="You can leave these as default. Usually order/review logic should update these automatically.">
+            <Section
+              title="Stats & Audit Values"
+              note="You can leave these as default. Usually order/review logic should update these automatically."
+            >
               <div className="grid gap-4 sm:grid-cols-3">
-                <TextField label="View Count" type="number" value={form.viewCount} onChange={(value) => setField("viewCount", value)} />
-                <TextField label="Wishlist Count" type="number" value={form.wishlistCount} onChange={(value) => setField("wishlistCount", value)} />
-                <TextField label="Cart Count" type="number" value={form.cartCount} onChange={(value) => setField("cartCount", value)} />
-                <TextField label="Order Count" type="number" value={form.orderCount} onChange={(value) => setField("orderCount", value)} />
-                <TextField label="Average Rating" type="number" value={form.averageRating} onChange={(value) => setField("averageRating", value)} />
-                <TextField label="Total Reviews" type="number" value={form.totalReviews} onChange={(value) => setField("totalReviews", value)} />
-                <TextField label="Published At" type="datetime-local" value={form.publishedAt} onChange={(value) => setField("publishedAt", value)} />
+                <TextField
+                  label="View Count"
+                  type="number"
+                  value={form.viewCount}
+                  onChange={(value) => setField("viewCount", value)}
+                />
+                <TextField
+                  label="Wishlist Count"
+                  type="number"
+                  value={form.wishlistCount}
+                  onChange={(value) => setField("wishlistCount", value)}
+                />
+                <TextField
+                  label="Cart Count"
+                  type="number"
+                  value={form.cartCount}
+                  onChange={(value) => setField("cartCount", value)}
+                />
+                <TextField
+                  label="Order Count"
+                  type="number"
+                  value={form.orderCount}
+                  onChange={(value) => setField("orderCount", value)}
+                />
+                <TextField
+                  label="Average Rating"
+                  type="number"
+                  value={form.averageRating}
+                  onChange={(value) => setField("averageRating", value)}
+                />
+                <TextField
+                  label="Total Reviews"
+                  type="number"
+                  value={form.totalReviews}
+                  onChange={(value) => setField("totalReviews", value)}
+                />
+                <TextField
+                  label="Published At"
+                  type="datetime-local"
+                  value={form.publishedAt}
+                  onChange={(value) => setField("publishedAt", value)}
+                />
               </div>
 
               {initialProduct && (
                 <div className="mt-4 grid gap-3 rounded-xl border border-gray-800 bg-gray-950 p-4 text-xs text-gray-400 sm:grid-cols-2">
                   <p>Created By: {initialProduct.createdByEmail || "N/A"}</p>
                   <p>Updated By: {initialProduct.updatedByEmail || "N/A"}</p>
-                  <p>Created At: {initialProduct.createdAt ? new Date(initialProduct.createdAt).toLocaleString() : "N/A"}</p>
-                  <p>Updated At: {initialProduct.updatedAt ? new Date(initialProduct.updatedAt).toLocaleString() : "N/A"}</p>
+                  <p>
+                    Created At:{" "}
+                    {initialProduct.createdAt
+                      ? new Date(initialProduct.createdAt).toLocaleString()
+                      : "N/A"}
+                  </p>
+                  <p>
+                    Updated At:{" "}
+                    {initialProduct.updatedAt
+                      ? new Date(initialProduct.updatedAt).toLocaleString()
+                      : "N/A"}
+                  </p>
                 </div>
               )}
             </Section>
@@ -1258,15 +1728,37 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
               <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
                 <div className="grid min-h-[220px] place-items-center overflow-hidden rounded-xl bg-black">
                   {mainPreview ? (
-                    <img src={mainPreview} alt="Main preview" className="h-56 w-full object-contain p-3" />
+                    <img
+                      src={mainPreview}
+                      alt="Main preview"
+                      className="h-56 w-full object-contain p-3"
+                    />
                   ) : (
-                    <span className="text-sm text-gray-500">Click to upload main image</span>
+                    <span className="text-sm text-gray-500">
+                      Click to upload main image
+                    </span>
                   )}
                 </div>
-                <input type="file" accept="image/*" className="hidden" onChange={(event) => updateFilePreview(event, setMainImage, setMainPreview, initialProduct?.mainImageUrl || "")} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) =>
+                    updateFilePreview(
+                      event,
+                      setMainImage,
+                      setMainPreview,
+                      initialProduct?.mainImageUrl || "",
+                    )
+                  }
+                />
               </label>
               <div className="mt-4">
-                <TextField label="Main Image Alt Text" value={form.mainImageAlt} onChange={(value) => setField("mainImageAlt", value)} />
+                <TextField
+                  label="Main Image Alt Text"
+                  value={form.mainImageAlt}
+                  onChange={(value) => setField("mainImageAlt", value)}
+                />
               </div>
             </Section>
 
@@ -1274,17 +1766,43 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
               <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
                 <div className="grid min-h-[160px] place-items-center overflow-hidden rounded-xl bg-black">
                   {hoverPreview ? (
-                    <img src={hoverPreview} alt="Hover preview" className="h-40 w-full object-contain p-3" />
+                    <img
+                      src={hoverPreview}
+                      alt="Hover preview"
+                      className="h-40 w-full object-contain p-3"
+                    />
                   ) : (
-                    <span className="text-sm text-gray-500">Click to upload hover image</span>
+                    <span className="text-sm text-gray-500">
+                      Click to upload hover image
+                    </span>
                   )}
                 </div>
-                <input type="file" accept="image/*" className="hidden" onChange={(event) => updateFilePreview(event, setHoverImage, setHoverPreview, initialProduct?.hoverImageUrl || "")} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) =>
+                    updateFilePreview(
+                      event,
+                      setHoverImage,
+                      setHoverPreview,
+                      initialProduct?.hoverImageUrl || "",
+                    )
+                  }
+                />
               </label>
               <div className="mt-4 space-y-3">
-                <TextField label="Hover Image Alt Text" value={form.hoverImageAlt} onChange={(value) => setField("hoverImageAlt", value)} />
+                <TextField
+                  label="Hover Image Alt Text"
+                  value={form.hoverImageAlt}
+                  onChange={(value) => setField("hoverImageAlt", value)}
+                />
                 {initialProduct?.hoverImageUrl && (
-                  <SwitchField label="Remove Existing Hover Image" checked={form.removeHoverImage} onChange={(value) => setField("removeHoverImage", value)} />
+                  <SwitchField
+                    label="Remove Existing Hover Image"
+                    checked={form.removeHoverImage}
+                    onChange={(value) => setField("removeHoverImage", value)}
+                  />
                 )}
               </div>
             </Section>
@@ -1293,16 +1811,39 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
               <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
                 <div className="grid aspect-video place-items-center overflow-hidden rounded-xl bg-black">
                   {videoPreview ? (
-                    <video src={videoPreview} className="h-full w-full object-contain" controls muted />
+                    <video
+                      src={videoPreview}
+                      className="h-full w-full object-contain"
+                      controls
+                      muted
+                    />
                   ) : (
-                    <span className="text-sm text-gray-500">Click to upload product video</span>
+                    <span className="text-sm text-gray-500">
+                      Click to upload product video
+                    </span>
                   )}
                 </div>
-                <input type="file" accept="video/*" className="hidden" onChange={(event) => updateFilePreview(event, setVideo, setVideoPreview, initialProduct?.videoUrl || "")} />
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(event) =>
+                    updateFilePreview(
+                      event,
+                      setVideo,
+                      setVideoPreview,
+                      initialProduct?.videoUrl || "",
+                    )
+                  }
+                />
               </label>
               {initialProduct?.videoUrl && (
                 <div className="mt-4">
-                  <SwitchField label="Remove Existing Video" checked={form.removeVideo} onChange={(value) => setField("removeVideo", value)} />
+                  <SwitchField
+                    label="Remove Existing Video"
+                    checked={form.removeVideo}
+                    onChange={(value) => setField("removeVideo", value)}
+                  />
                 </div>
               )}
             </Section>
@@ -1320,7 +1861,11 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
                         onClick={() => toggleRemoveExistingExtraImage(image.id)}
                         className={`relative overflow-hidden rounded-xl border ${removed ? "border-red-500 opacity-45" : "border-gray-800"}`}
                       >
-                        <img src={image.imageUrl} alt={image.altText || "Extra image"} className="h-24 w-full object-contain p-2" />
+                        <img
+                          src={image.imageUrl}
+                          alt={image.altText || "Extra image"}
+                          className="h-24 w-full object-contain p-2"
+                        />
                         <span className="absolute bottom-1 left-1 right-1 rounded bg-black/80 py-1 text-[10px] text-white">
                           {removed ? "Will remove" : "Click remove"}
                         </span>
@@ -1349,22 +1894,34 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
                 </button>
 
                 <p className="mt-3 text-xs text-gray-400">
-                  You can select 1 image or many images together. Selected new images: {extraImages.length}
+                  You can select 1 image or many images together. Selected new
+                  images: {extraImages.length}
                 </p>
               </div>
 
               <div className="mt-4">
-                <TextField label="Extra Images Alt Text" value={form.extraImagesAlt} onChange={(value) => setField("extraImagesAlt", value)} />
+                <TextField
+                  label="Extra Images Alt Text"
+                  value={form.extraImagesAlt}
+                  onChange={(value) => setField("extraImagesAlt", value)}
+                />
               </div>
 
               {extraImages.length > 0 && (
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {extraImages.map((file, index) => (
-                    <div key={`${file.name}-${file.size}-${file.lastModified}-${index}`} className="rounded-xl border border-gray-800 bg-gray-950 p-3">
+                    <div
+                      key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                      className="rounded-xl border border-gray-800 bg-gray-950 p-3"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-gray-200">{file.name}</p>
-                          <p className="mt-1 text-[11px] text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                          <p className="truncate text-xs font-semibold text-gray-200">
+                            {file.name}
+                          </p>
+                          <p className="mt-1 text-[11px] text-gray-500">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
                         </div>
 
                         <button
@@ -1386,28 +1943,94 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
                 <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-4 transition hover:border-orange-500/70">
                   <div className="grid min-h-[150px] place-items-center overflow-hidden rounded-xl bg-black">
                     {sizeChartPreview ? (
-                      <img src={sizeChartPreview} alt="Size chart preview" className="h-40 w-full object-contain p-3" />
+                      <img
+                        src={sizeChartPreview}
+                        alt="Size chart preview"
+                        className="h-40 w-full object-contain p-3"
+                      />
                     ) : (
-                      <span className="text-sm text-gray-500">Click to upload size chart image</span>
+                      <span className="text-sm text-gray-500">
+                        Click to upload size chart image
+                      </span>
                     )}
                   </div>
-                  <input type="file" accept="image/*" className="hidden" onChange={(event) => updateFilePreview(event, setSizeChartImage, setSizeChartPreview, initialProduct?.sizeChart?.imageUrl || "")} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) =>
+                      updateFilePreview(
+                        event,
+                        setSizeChartImage,
+                        setSizeChartPreview,
+                        initialProduct?.sizeChart?.imageUrl || "",
+                      )
+                    }
+                  />
                 </label>
 
-                <TextField label="Size Chart Name" value={form.sizeChartName} onChange={(value) => setField("sizeChartName", value)} placeholder="Men Shirt Size Chart" />
-                <TextField label="Size Chart Title" value={form.sizeChartTitle} onChange={(value) => setField("sizeChartTitle", value)} />
-                <TextAreaField label="Size Chart Description" value={form.sizeChartDescription} onChange={(value) => setField("sizeChartDescription", value)} rows={3} />
-                <TextField label="Unit" value={form.sizeChartUnit} onChange={(value) => setField("sizeChartUnit", value)} placeholder="inch / cm" />
-                <TextAreaField label="Chart Data JSON" value={form.sizeChartData} onChange={(value) => setField("sizeChartData", value)} mono placeholder='[{"size":"M","chest":"38","length":"27"}]' />
-                <TextField label="Note" value={form.sizeChartNote} onChange={(value) => setField("sizeChartNote", value)} />
-                <TextField label="Sort Order" type="number" value={form.sizeChartSortOrder} onChange={(value) => setField("sizeChartSortOrder", value)} />
+                <TextField
+                  label="Size Chart Name"
+                  value={form.sizeChartName}
+                  onChange={(value) => setField("sizeChartName", value)}
+                  placeholder="Men Shirt Size Chart"
+                />
+                <TextField
+                  label="Size Chart Title"
+                  value={form.sizeChartTitle}
+                  onChange={(value) => setField("sizeChartTitle", value)}
+                />
+                <TextAreaField
+                  label="Size Chart Description"
+                  value={form.sizeChartDescription}
+                  onChange={(value) => setField("sizeChartDescription", value)}
+                  rows={3}
+                />
+                <TextField
+                  label="Unit"
+                  value={form.sizeChartUnit}
+                  onChange={(value) => setField("sizeChartUnit", value)}
+                  placeholder="inch / cm"
+                />
+                <TextAreaField
+                  label="Chart Data JSON"
+                  value={form.sizeChartData}
+                  onChange={(value) => setField("sizeChartData", value)}
+                  mono
+                  placeholder='[{"size":"M","chest":"38","length":"27"}]'
+                />
+                <TextField
+                  label="Note"
+                  value={form.sizeChartNote}
+                  onChange={(value) => setField("sizeChartNote", value)}
+                />
+                <TextField
+                  label="Sort Order"
+                  type="number"
+                  value={form.sizeChartSortOrder}
+                  onChange={(value) => setField("sizeChartSortOrder", value)}
+                />
 
-                <SwitchField label="Size Chart Active" checked={form.sizeChartIsActive} onChange={(value) => setField("sizeChartIsActive", value)} />
+                <SwitchField
+                  label="Size Chart Active"
+                  checked={form.sizeChartIsActive}
+                  onChange={(value) => setField("sizeChartIsActive", value)}
+                />
 
                 {initialProduct?.sizeChart && (
                   <>
-                    <SwitchField label="Remove Size Chart" checked={form.removeSizeChart} onChange={(value) => setField("removeSizeChart", value)} />
-                    <SwitchField label="Remove Size Chart Image" checked={form.removeSizeChartImage} onChange={(value) => setField("removeSizeChartImage", value)} />
+                    <SwitchField
+                      label="Remove Size Chart"
+                      checked={form.removeSizeChart}
+                      onChange={(value) => setField("removeSizeChart", value)}
+                    />
+                    <SwitchField
+                      label="Remove Size Chart Image"
+                      checked={form.removeSizeChartImage}
+                      onChange={(value) =>
+                        setField("removeSizeChartImage", value)
+                      }
+                    />
                   </>
                 )}
               </div>
@@ -1416,7 +2039,10 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
         </div>
 
         <div className="flex justify-end gap-3 border-t border-gray-800 bg-gray-950/95 p-5">
-          <Link href={listHref} className="rounded-xl bg-gray-800 px-5 py-3 text-white transition hover:bg-gray-700">
+          <Link
+            href={listHref}
+            className="rounded-xl bg-gray-800 px-5 py-3 text-white transition hover:bg-gray-700"
+          >
             Cancel
           </Link>
           <button
@@ -1425,7 +2051,11 @@ export default function ProductFormPage({ mode, panelType, productId }: ProductF
             disabled={submitting}
             className="rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Processing..." : isEdit ? "Update Product" : "Create Product"}
+            {submitting
+              ? "Processing..."
+              : isEdit
+                ? "Update Product"
+                : "Create Product"}
           </button>
         </div>
       </div>

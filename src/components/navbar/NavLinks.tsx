@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ReactNode, Suspense, useRef, useState } from "react";
+import {
+  ReactNode,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   FaBolt,
@@ -20,37 +27,62 @@ import {
   FaMapMarkerAlt,
   FaInfoCircle,
   FaBlog,
+  FaTags,
 } from "react-icons/fa";
 
-const categoryItems = [
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+type ApiCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  iconSvg?: string | null;
+  sortOrder?: number | null;
+  isPublished?: boolean | null;
+};
+
+interface DropdownItem {
+  name: string;
+  href: string;
+  icon?: ReactNode;
+  iconSvg?: string | null;
+}
+
+interface DesktopDropdownProps {
+  title: string;
+  items: DropdownItem[];
+  isActive?: boolean;
+}
+
+const fallbackCategoryItems: DropdownItem[] = [
   {
     name: "Mobile Phones",
-    href: "/products?category=mobile-phones",
+    href: "/products/mobile-phones",
     icon: <FaMobileAlt />,
   },
   {
     name: "Laptops",
-    href: "/products?category=laptops",
+    href: "/products/laptops",
     icon: <FaLaptop />,
   },
   {
     name: "Accessories",
-    href: "/products?category=accessories",
+    href: "/products/accessories",
     icon: <FaHeadphones />,
   },
   {
     name: "Headphones",
-    href: "/products?category=headphones",
+    href: "/products/headphones",
     icon: <FaHeadphones />,
   },
   {
     name: "Smart Watches",
-    href: "/products?category=smart-watches",
+    href: "/products/smart-watches",
     icon: <FaClock />,
   },
 ];
 
-const exploreItems = [
+const exploreItems: DropdownItem[] = [
   {
     name: "Hot Deals",
     href: "/products?tag=deals",
@@ -68,7 +100,7 @@ const exploreItems = [
   },
 ];
 
-const supportItems = [
+const supportItems: DropdownItem[] = [
   {
     name: "Contact Us",
     href: "/contact",
@@ -96,7 +128,7 @@ const supportItems = [
   },
 ];
 
-const companyItems = [
+const companyItems: DropdownItem[] = [
   {
     name: "About Us",
     href: "/about",
@@ -109,16 +141,32 @@ const companyItems = [
   },
 ];
 
-interface DropdownItem {
-  name: string;
-  href: string;
-  icon: ReactNode;
+function isSafeInlineSvg(svg?: string | null) {
+  if (!svg) return false;
+
+  const cleanSvg = svg.trim();
+  const lowerSvg = cleanSvg.toLowerCase();
+
+  return (
+    cleanSvg.startsWith("<svg") &&
+    !lowerSvg.includes("<script") &&
+    !/\son[a-z]+\s*=/.test(lowerSvg)
+  );
 }
 
-interface DesktopDropdownProps {
-  title: string;
-  items: DropdownItem[];
-  isActive?: boolean;
+function DropdownIcon({ item }: { item: DropdownItem }) {
+  if (isSafeInlineSvg(item.iconSvg)) {
+    return (
+      <span
+        className="inline-flex h-5 w-5 items-center justify-center text-orange-500 [&_svg]:h-5 [&_svg]:w-5 [&_svg]:stroke-current"
+        dangerouslySetInnerHTML={{ __html: item.iconSvg!.trim() }}
+      />
+    );
+  }
+
+  return (
+    <span className="text-base text-orange-500">{item.icon || <FaTags />}</span>
+  );
 }
 
 const DesktopDropdown = ({
@@ -133,7 +181,9 @@ const DesktopDropdown = ({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentSearch = searchParams.toString();
-  const currentFullPath = currentSearch ? `${pathname}?${currentSearch}` : pathname;
+  const currentFullPath = currentSearch
+    ? `${pathname}?${currentSearch}`
+    : pathname;
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -176,11 +226,12 @@ const DesktopDropdown = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.18 }}
-            className="absolute left-0 z-50 mt-3 w-56 overflow-hidden rounded-xl border border-gray-800 bg-black shadow-xl"
+            className="absolute left-0 z-50 mt-3 w-60 overflow-hidden rounded-xl border border-gray-800 bg-black shadow-xl"
           >
             <ul className="py-2">
               {items.map((item) => {
-                const isItemActive = currentFullPath === item.href;
+                const isItemActive =
+                  currentFullPath === item.href || pathname === item.href;
 
                 return (
                   <li key={item.href}>
@@ -192,8 +243,8 @@ const DesktopDropdown = ({
                           : "text-gray-300 hover:bg-gray-900 hover:text-orange-400"
                       }`}
                     >
-                      <span className="text-base text-orange-500">
-                        {item.icon}
+                      <span className="grid h-6 w-6 place-items-center text-orange-500">
+                        <DropdownIcon item={item} />
                       </span>
                       <span>{item.name}</span>
                     </Link>
@@ -210,9 +261,60 @@ const DesktopDropdown = ({
 
 const NavLinksContent = () => {
   const pathname = usePathname();
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadCategories() {
+      try {
+        if (!API_BASE) return;
+
+        const response = await fetch(`${API_BASE}/api/v1/products/meta`, {
+          cache: "no-store",
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) return;
+
+        if (!ignore) {
+          setCategories(Array.isArray(data.categories) ? data.categories : []);
+        }
+      } catch {
+        if (!ignore) setCategories([]);
+      }
+    }
+
+    loadCategories();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const categoryItems = useMemo<DropdownItem[]>(() => {
+    const publishedCategories = categories
+      .filter((category) => category.isPublished !== false)
+      .sort((a, b) => {
+        const sortA = Number(a.sortOrder ?? 0);
+        const sortB = Number(b.sortOrder ?? 0);
+        if (sortA !== sortB) return sortA - sortB;
+        return a.name.localeCompare(b.name);
+      })
+      .map((category) => ({
+        name: category.name,
+        href: `/products/${category.slug}`,
+        iconSvg: category.iconSvg,
+      }));
+
+    return publishedCategories.length > 0
+      ? publishedCategories
+      : fallbackCategoryItems;
+  }, [categories]);
 
   const isHomeActive = pathname === "/";
-  const isProductsActive = pathname.startsWith("/products");
+  const isProductsActive = pathname === "/products";
+  const isCategoriesActive = pathname.startsWith("/products/");
   const isSupportActive = supportItems.some((item) => pathname === item.href);
   const isCompanyActive = companyItems.some((item) => pathname === item.href);
 
@@ -247,10 +349,10 @@ const NavLinksContent = () => {
       <DesktopDropdown
         title="Categories"
         items={categoryItems}
-        isActive={false}
+        isActive={isCategoriesActive}
       />
 
-      <DesktopDropdown title="Explore" items={exploreItems} isActive={false} />
+      <DesktopDropdown title="Explore" items={exploreItems} />
 
       <DesktopDropdown
         title="Support"

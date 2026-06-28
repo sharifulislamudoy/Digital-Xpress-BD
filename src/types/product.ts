@@ -15,6 +15,14 @@ export interface ProductSubCategory {
   name: string;
   slug: string;
   categoryId: string;
+
+  description?: string | null;
+  imageUrl?: string | null;
+  imageCloudinaryPublicId?: string | null;
+  iconSvg?: string | null;
+  sortOrder?: number | null;
+  isPublished?: boolean | null;
+
   seoTitle?: string | null;
   seoDescription?: string | null;
   seoKeywords?: string[];
@@ -26,6 +34,14 @@ export interface ProductCategory {
   id: string;
   name: string;
   slug: string;
+
+  description?: string | null;
+  imageUrl?: string | null;
+  imageCloudinaryPublicId?: string | null;
+  iconSvg?: string | null;
+  sortOrder?: number | null;
+  isPublished?: boolean | null;
+
   seoTitle?: string | null;
   seoDescription?: string | null;
   seoKeywords?: string[];
