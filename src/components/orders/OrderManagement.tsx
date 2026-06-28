@@ -16,8 +16,12 @@ import {
 } from "react-icons/fa";
 
 import ConfirmationModal from "@/components/users/ConfirmationModal";
-import type { Order, OrderStatus } from "@/types/order";
-import { orderStatusLabels, orderStatusOptions } from "@/types/order";
+import type { DeliveryChargeSetting, Order, OrderStatus } from "@/types/order";
+import {
+  bdDistrictOptions,
+  orderStatusLabels,
+  orderStatusOptions,
+} from "@/types/order";
 import { formatPrice } from "@/lib/formatPrice";
 
 const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(
@@ -68,12 +72,14 @@ type CourierForm = {
   courierName: string;
   courierTrackingNumber: string;
   courierNote: string;
+  actualCourierCost: string;
 };
 
 const emptyCourierForm: CourierForm = {
   courierName: "",
   courierTrackingNumber: "",
   courierNote: "",
+  actualCourierCost: "",
 };
 
 interface OrderManagementProps {
@@ -191,6 +197,10 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
   const [isCourierModalOpen, setIsCourierModalOpen] = useState(false);
   const [courierForm, setCourierForm] = useState<CourierForm>(emptyCourierForm);
 
+  const [deliveryChargeModalOpen, setDeliveryChargeModalOpen] = useState(false);
+  const [deliveryCharges, setDeliveryCharges] = useState<DeliveryChargeSetting[]>([]);
+  const [deliveryChargeLoading, setDeliveryChargeLoading] = useState(false);
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const selectedStatusLabel =
@@ -200,6 +210,96 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
 
   const getFilterCount = (value: "all" | OrderStatus) => {
     return orderCounts[value] || 0;
+  };
+
+  const normalizeDeliveryRows = (rows: DeliveryChargeSetting[]) => {
+    const rowMap = new Map<string, number>();
+
+    rows.forEach((row) => {
+      const district = String(row.district || "").trim();
+      const charge = Number(row.charge);
+
+      if (!district || !Number.isFinite(charge)) return;
+      rowMap.set(district, Math.max(Number(charge.toFixed(2)), 0));
+    });
+
+    return bdDistrictOptions.map((district) => ({
+      district,
+      charge: rowMap.get(district) || 0,
+    }));
+  };
+
+  const loadDeliveryCharges = useCallback(async () => {
+    if (sessionStatus === "loading") return;
+    if (!API_BASE || !token) return;
+
+    try {
+      setDeliveryChargeLoading(true);
+
+      const res = await fetch(`${API_BASE}/api/v1/orders/admin/delivery-charges`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Delivery charge load failed");
+        return;
+      }
+
+      setDeliveryCharges(normalizeDeliveryRows(Array.isArray(data.charges) ? data.charges : []));
+    } catch (error) {
+      console.error(error);
+      toast.error("Delivery charge load failed");
+    } finally {
+      setDeliveryChargeLoading(false);
+    }
+  }, [sessionStatus, token]);
+
+  const openDeliveryChargeModal = () => {
+    setDeliveryChargeModalOpen(true);
+    loadDeliveryCharges();
+  };
+
+  const handleSaveDeliveryCharges = async () => {
+    if (!API_BASE || !token) return;
+
+    try {
+      setActionLoading("delivery-charges");
+
+      const res = await fetch(`${API_BASE}/api/v1/orders/admin/delivery-charges`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          charges: deliveryCharges.map((item) => ({
+            district: item.district,
+            charge: Number(item.charge) || 0,
+          })),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Delivery charge update failed");
+        return;
+      }
+
+      toast.success(data.message || "Delivery charges updated");
+      setDeliveryCharges(normalizeDeliveryRows(Array.isArray(data.charges) ? data.charges : deliveryCharges));
+      setDeliveryChargeModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Delivery charge update failed");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const loadOrderCounts = useCallback(async () => {
@@ -408,6 +508,11 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
       return;
     }
 
+    if (Number(courierForm.actualCourierCost) <= 0) {
+      toast.error("Courier company cost is required");
+      return;
+    }
+
     setIsCourierModalOpen(false);
     setIsBulkConfirmOpen(true);
   };
@@ -540,6 +645,14 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
                 className="h-11 w-full rounded-2xl border border-neutral-800 bg-black pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-neutral-600 focus:border-orange-500 sm:w-80"
               />
             </div>
+
+            <button
+              type="button"
+              onClick={openDeliveryChargeModal}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-neutral-800 bg-black px-4 text-sm font-black text-neutral-200 transition hover:border-orange-500/60 hover:text-orange-300 sm:w-auto"
+            >
+              Delivery Charge
+            </button>
 
             <div className="relative">
               <button
@@ -800,6 +913,10 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
                     >
                       {order.courierTrackingNumber || "No tracking yet"}
                     </ShortText>
+
+                    <p className="mt-1 truncate text-[11px] font-bold text-orange-300">
+                      Cost: {formatPrice(order.actualCourierCost || 0)}
+                    </p>
                   </td>
 
                   <td className="px-2 py-3 text-[11px] leading-5 text-neutral-500">
@@ -879,6 +996,16 @@ export default function OrderManagement({ panelType }: OrderManagementProps) {
         onChange={(nextForm) => setCourierForm(nextForm)}
         onClose={() => setIsCourierModalOpen(false)}
         onSubmit={startCourierConfirm}
+      />
+
+      <DeliveryChargeModal
+        isOpen={deliveryChargeModalOpen}
+        rows={deliveryCharges}
+        loading={deliveryChargeLoading}
+        saving={actionLoading === "delivery-charges"}
+        onChange={setDeliveryCharges}
+        onClose={() => setDeliveryChargeModalOpen(false)}
+        onSubmit={handleSaveDeliveryCharges}
       />
 
       {viewOrder && (
@@ -988,6 +1115,18 @@ function CourierInfoModal({
           </label>
 
           <label className="block">
+            <span className="text-sm font-semibold text-neutral-300">Courier Company Cost *</span>
+            <input
+              type="number"
+              min={0}
+              value={form.actualCourierCost}
+              onChange={(event) => setField("actualCourierCost", event.target.value)}
+              placeholder="Example: 90"
+              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-black px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-600 focus:border-orange-500"
+            />
+          </label>
+
+          <label className="block">
             <span className="text-sm font-semibold text-neutral-300">Courier Note</span>
             <textarea
               value={form.courierNote}
@@ -1015,6 +1154,120 @@ function CourierInfoModal({
             className="rounded-2xl bg-orange-600 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-700"
           >
             Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function DeliveryChargeModal({
+  isOpen,
+  rows,
+  loading,
+  saving,
+  onChange,
+  onClose,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  rows: DeliveryChargeSetting[];
+  loading: boolean;
+  saving: boolean;
+  onChange: (rows: DeliveryChargeSetting[]) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  if (!isOpen) return null;
+
+  const safeRows =
+    rows.length > 0
+      ? rows
+      : bdDistrictOptions.map((district) => ({ district, charge: 0 }));
+
+  const updateCharge = (district: string, charge: string) => {
+    const parsed = Number(charge);
+    const nextCharge = Number.isFinite(parsed) ? Math.max(parsed, 0) : 0;
+
+    onChange(
+      safeRows.map((row) =>
+        row.district === district ? { ...row, charge: nextCharge } : row,
+      ),
+    );
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[95] grid place-items-center bg-black/75 px-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-3xl rounded-3xl border border-neutral-800 bg-neutral-950 p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-neutral-800 pb-4">
+          <div>
+            <h2 className="text-xl font-black text-white">Delivery Charge Settings</h2>
+            <p className="mt-1 text-sm leading-6 text-neutral-400">
+              Je district e joto taka set korba, checkout e customer oi delivery charge dekhbe and order eo oi charge save hobe.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-10 w-10 place-items-center rounded-2xl border border-neutral-800 text-neutral-400 transition hover:border-orange-500/50 hover:text-orange-300"
+            aria-label="Close delivery charge modal"
+          >
+            <FaTimes size={14} />
+          </button>
+        </div>
+
+        <div className="mt-5 max-h-[60vh] overflow-y-auto pr-1">
+          {loading ? (
+            <div className="rounded-2xl border border-neutral-800 bg-black p-8 text-center text-neutral-400">
+              Loading delivery charges...
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {safeRows.map((row) => (
+                <label
+                  key={row.district}
+                  className="rounded-2xl border border-neutral-800 bg-black p-3"
+                >
+                  <span className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
+                    {row.district}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={row.charge}
+                    onChange={(event) => updateCharge(row.district, event.target.value)}
+                    className="mt-2 h-10 w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 text-sm font-bold text-white outline-none transition focus:border-orange-500"
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl border border-neutral-800 px-5 py-3 text-sm font-bold text-neutral-300 transition hover:bg-black hover:text-white"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={saving || loading}
+            className="rounded-2xl bg-orange-600 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-400"
+          >
+            {saving ? "Saving..." : "Save Charges"}
           </button>
         </div>
       </div>

@@ -23,22 +23,16 @@ type SessionTokenShape =
   | null
   | undefined;
 
-type ReportStatus = "all" | "expected" | "delivered-profit" | OrderStatus;
+type ReportStatus = "completed" | "delivered" | "returned";
 
 type Summary = {
   orderCount: number;
   totalSales: number;
   deliveryCharge: number;
-  discountAmount: number;
-  paidAmount: number;
-  dueAmount: number;
-  codAmount: number;
   productCostTotal: number;
   grossProfit: number;
   actualCourierCost: number;
   packagingCost: number;
-  paymentFee: number;
-  otherCost: number;
   netProfit: number;
 };
 
@@ -48,6 +42,8 @@ type StatusBreakdown = {
   totalSales: number;
   productCostTotal: number;
   grossProfit: number;
+  actualCourierCost: number;
+  packagingCost: number;
   netProfit: number;
 };
 
@@ -66,45 +62,24 @@ type MissingCostItem = {
   invoiceNo: string;
   productId: string | null;
   productName: string;
-  sku?: string | null;
+  sku: string | null;
   quantity: number;
 };
 
-type ProfitLossResponse = {
-  success: boolean;
-  summary: Summary;
-  statusBreakdown: StatusBreakdown[];
-  productProfit: ProductProfit[];
-  missingCostItems?: MissingCostItem[];
-  warning?: string | null;
-  message?: string;
-};
-
 const statusOptions: Array<{ value: ReportStatus; label: string }> = [
-  { value: "delivered", label: "Delivered Profit" },
-  { value: "expected", label: "Expected Profit" },
-  { value: "all", label: "All Status" },
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "returned", label: "Returned" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "completed", label: "Delivered + Return" },
+  { value: "delivered", label: "Delivered Only" },
+  { value: "returned", label: "Return Only" },
 ];
 
 const emptySummary: Summary = {
   orderCount: 0,
   totalSales: 0,
   deliveryCharge: 0,
-  discountAmount: 0,
-  paidAmount: 0,
-  dueAmount: 0,
-  codAmount: 0,
   productCostTotal: 0,
   grossProfit: 0,
   actualCourierCost: 0,
   packagingCost: 0,
-  paymentFee: 0,
-  otherCost: 0,
   netProfit: 0,
 };
 
@@ -133,7 +108,7 @@ function statusLabel(status: OrderStatus) {
     processing: "Processing",
     shipped: "Shipped",
     delivered: "Delivered",
-    returned: "Returned",
+    returned: "Return",
     cancelled: "Cancelled",
   };
 
@@ -141,29 +116,30 @@ function statusLabel(status: OrderStatus) {
 }
 
 function StatCard({
-  title,
+  label,
   value,
-  tone = "default",
+  hint,
+  tone = "normal",
 }: {
-  title: string;
-  value: string | number;
-  tone?: "default" | "good" | "bad" | "orange";
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "normal" | "profit" | "loss";
 }) {
   const toneClass =
-    tone === "good"
+    tone === "profit"
       ? "text-emerald-300"
-      : tone === "bad"
+      : tone === "loss"
         ? "text-red-300"
-        : tone === "orange"
-          ? "text-orange-300"
-          : "text-white";
+        : "text-white";
 
   return (
-    <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
-        {title}
+    <div className="rounded-3xl border border-neutral-800 bg-black p-4 shadow-[0_16px_50px_rgba(0,0,0,0.28)]">
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">
+        {label}
       </p>
-      <p className={`mt-2 text-2xl font-black ${toneClass}`}>{value}</p>
+      <p className={`mt-3 text-2xl font-black ${toneClass}`}>{value}</p>
+      {hint ? <p className="mt-2 text-xs text-neutral-500">{hint}</p> : null}
     </div>
   );
 }
@@ -181,7 +157,7 @@ export default function ProfitLossReport() {
 
   const [from, setFrom] = useState(formatDateInput(defaultFrom));
   const [to, setTo] = useState(formatDateInput(today));
-  const [status, setStatus] = useState<ReportStatus>("delivered");
+  const [status, setStatus] = useState<ReportStatus>("completed");
 
   const [summary, setSummary] = useState<Summary>(emptySummary);
   const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdown[]>([]);
@@ -193,54 +169,52 @@ export default function ProfitLossReport() {
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
 
+  const profitMargin =
+    summary.totalSales > 0 ? (summary.netProfit / summary.totalSales) * 100 : 0;
+
   const loadReport = useCallback(async () => {
     if (sessionStatus === "loading") return;
 
-    if (!API_BASE) {
-      toast.error("NEXT_PUBLIC_BACKEND_URL is missing");
-      setLoading(false);
-      return;
-    }
-
-    if (!token) {
+    if (!API_BASE || !token) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+
       const params = new URLSearchParams({ from, to, status });
       const res = await fetch(
         `${API_BASE}/api/v1/reports/profit-loss?${params}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         },
       );
 
-      const data: ProfitLossResponse = await res.json();
+      const data = await res.json();
 
       if (!res.ok || !data.success) {
-        toast.error(data.message || "Report load failed");
+        toast.error(data.message || "Profit report load failed");
         return;
       }
 
-      setSummary(data.summary || emptySummary);
+      setSummary({
+        ...emptySummary,
+        ...(data.summary || {}),
+        orderCount: toNumber(data.summary?.orderCount),
+      });
       setStatusBreakdown(
         Array.isArray(data.statusBreakdown) ? data.statusBreakdown : [],
       );
-      setProductProfit(
-        Array.isArray(data.productProfit) ? data.productProfit : [],
-      );
+      setProductProfit(Array.isArray(data.productProfit) ? data.productProfit : []);
       setMissingCostItems(
         Array.isArray(data.missingCostItems) ? data.missingCostItems : [],
       );
       setWarning(data.warning || null);
     } catch (error) {
       console.error(error);
-      toast.error("Report load failed");
+      toast.error("Profit report load failed");
     } finally {
       setLoading(false);
     }
@@ -250,16 +224,8 @@ export default function ProfitLossReport() {
     loadReport();
   }, [loadReport]);
 
-  const handleRecalculateProfit = useCallback(async () => {
-    if (!API_BASE) {
-      toast.error("NEXT_PUBLIC_BACKEND_URL is missing");
-      return;
-    }
-
-    if (!token) {
-      toast.error("Login token missing");
-      return;
-    }
+  const handleRecalculate = async () => {
+    if (!API_BASE || !token) return;
 
     try {
       setRecalculating(true);
@@ -269,8 +235,8 @@ export default function ProfitLossReport() {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({}),
         },
@@ -279,268 +245,161 @@ export default function ProfitLossReport() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        toast.error(data.message || "Profit recalculation failed");
+        toast.error(data.message || "Recalculate failed");
         return;
       }
 
-      const missingCount = Array.isArray(data.missingCostItems)
-        ? data.missingCostItems.length
-        : 0;
-
-      if (missingCount > 0) {
-        toast.error(`${missingCount} sold item still has no cost price`);
-      } else {
-        toast.success("Profit recalculated successfully");
-      }
-
-      await loadReport();
+      toast.success(data.message || "Profit recalculated");
+      loadReport();
     } catch (error) {
       console.error(error);
-      toast.error("Profit recalculation failed");
+      toast.error("Recalculate failed");
     } finally {
       setRecalculating(false);
     }
-  }, [token, loadReport]);
+  };
 
-  const netProfit = toNumber(summary.netProfit);
-  const grossProfit = toNumber(summary.grossProfit);
-  const profitMargin =
-    summary.totalSales > 0 ? (netProfit / summary.totalSales) * 100 : 0;
+  const netTone = summary.netProfit >= 0 ? "profit" : "loss";
+
+  if (sessionStatus === "loading" || loading) {
+    return (
+      <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-8 text-center text-neutral-400">
+        Loading profit report...
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-5">
+    <div className="space-y-5">
+      <section className="rounded-3xl border border-neutral-800 bg-neutral-950 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <h1 className="flex items-center gap-3 text-xl font-black text-white sm:text-2xl">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500/15 text-orange-400">
-                <FaChartLine />
-              </span>
-              Profit & Loss Report
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-300">
+              <FaChartLine size={20} />
+            </div>
+            <h1 className="text-xl font-black text-white sm:text-2xl">
+              Profit / Loss Report
             </h1>
-            <p className="mt-1 text-sm text-neutral-400">
-              Delivered order profit is confirmed profit. Pending, processing,
-              and shipped are expected profit.
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">
+              Simple formula: selling price - cost price + customer delivery charge - courier company charge - packaging cost. Packaging cost is always {formatPrice(20)} per order. Report only counts delivered and return orders.
             </p>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={handleRecalculateProfit}
-              disabled={recalculating}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-500/50 bg-black px-4 text-sm font-black text-orange-300 transition hover:bg-orange-500 hover:text-white disabled:opacity-60"
-            >
-              <FaSyncAlt className={recalculating ? "animate-spin" : ""} />
-              Recalculate Profit
-            </button>
-
-            <button
-              type="button"
-              onClick={loadReport}
-              disabled={loading}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-60"
-            >
-              <FaSyncAlt className={loading ? "animate-spin" : ""} />
-              Refresh
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleRecalculate}
+            disabled={recalculating}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-500/30 bg-orange-500/10 px-4 text-sm font-black text-orange-200 transition hover:bg-orange-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FaSyncAlt className={recalculating ? "animate-spin" : ""} size={13} />
+            {recalculating ? "Recalculating..." : "Recalculate"}
+          </button>
         </div>
-      </div>
 
-      <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-4 sm:p-5">
-        <div className="grid gap-3 md:grid-cols-4">
-          <label className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
               From
             </span>
             <input
               type="date"
               value={from}
               onChange={(event) => setFrom(event.target.value)}
-              className="h-11 w-full rounded-2xl border border-neutral-800 bg-black px-4 text-sm text-white outline-none focus:border-orange-500"
+              className="mt-2 h-11 w-full rounded-2xl border border-neutral-800 bg-black px-4 text-sm text-white outline-none transition focus:border-orange-500"
             />
           </label>
 
-          <label className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
               To
             </span>
             <input
               type="date"
               value={to}
               onChange={(event) => setTo(event.target.value)}
-              className="h-11 w-full rounded-2xl border border-neutral-800 bg-black px-4 text-sm text-white outline-none focus:border-orange-500"
+              className="mt-2 h-11 w-full rounded-2xl border border-neutral-800 bg-black px-4 text-sm text-white outline-none transition focus:border-orange-500"
             />
           </label>
 
-          <label className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
+          <label className="block md:col-span-2">
+            <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
               Status
             </span>
             <select
               value={status}
-              onChange={(event) =>
-                setStatus(event.target.value as ReportStatus)
-              }
-              className="h-11 w-full rounded-2xl border border-neutral-800 bg-black px-4 text-sm font-bold text-white outline-none focus:border-orange-500"
+              onChange={(event) => setStatus(event.target.value as ReportStatus)}
+              className="mt-2 h-11 w-full rounded-2xl border border-neutral-800 bg-black px-4 text-sm font-bold text-white outline-none transition focus:border-orange-500"
             >
               {statusOptions.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                  className="bg-black"
-                >
+                <option key={option.value} value={option.value} className="bg-black">
                   {option.label}
                 </option>
               ))}
             </select>
           </label>
-
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={loadReport}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-neutral-800 bg-black px-4 text-sm font-black text-white transition hover:border-orange-500 hover:text-orange-300"
-            >
-              <FaSearchDollar />
-              Apply Filter
-            </button>
-          </div>
         </div>
-      </div>
+      </section>
 
-      {(warning || missingCostItems.length > 0) && (
-        <div className="rounded-3xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-100">
-          <p className="font-black">Cost price missing</p>
-          <p className="mt-1 text-yellow-100/80">
-            {warning ||
-              "Some products do not have cost price, so profit cannot be calculated accurately."}
-          </p>
-          {missingCostItems.length > 0 && (
-            <p className="mt-2 text-xs text-yellow-100/70">
-              Missing cost items:{" "}
-              {missingCostItems
-                .slice(0, 5)
-                .map((item) => item.productName)
-                .join(", ")}
-              {missingCostItems.length > 5
-                ? ` and ${missingCostItems.length - 5} more`
-                : ""}
-            </p>
-          )}
+      {warning ? (
+        <div className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-200">
+          {warning}
         </div>
-      )}
+      ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Orders" value={summary.orderCount || 0} />
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Orders" value={String(summary.orderCount)} hint="Delivered + return only" />
+        <StatCard label="Product Sales" value={formatPrice(summary.totalSales)} hint="Selling price total" />
+        <StatCard label="Product Cost" value={formatPrice(summary.productCostTotal)} hint="Cost price total" />
         <StatCard
-          title="Sales"
-          value={formatPrice(summary.totalSales || 0)}
-          tone="orange"
+          label="Net Profit"
+          value={formatPrice(summary.netProfit)}
+          hint={`${profitMargin.toFixed(2)}% margin`}
+          tone={netTone}
         />
-        <StatCard
-          title="Product Cost"
-          value={formatPrice(summary.productCostTotal || 0)}
-        />
-        <StatCard
-          title="Gross Profit"
-          value={formatPrice(grossProfit)}
-          tone={grossProfit >= 0 ? "good" : "bad"}
-        />
-        <StatCard
-          title="Delivery Collected"
-          value={formatPrice(summary.deliveryCharge || 0)}
-        />
-        <StatCard
-          title="Courier Cost"
-          value={formatPrice(summary.actualCourierCost || 0)}
-        />
-        <StatCard
-          title="Extra Cost"
-          value={formatPrice(
-            (summary.packagingCost || 0) +
-              (summary.paymentFee || 0) +
-              (summary.otherCost || 0),
-          )}
-        />
-        <StatCard
-          title="Net Profit"
-          value={formatPrice(netProfit)}
-          tone={netProfit >= 0 ? "good" : "bad"}
-        />
-      </div>
+      </section>
 
-      <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-4 sm:p-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-lg font-black text-white">Profit Health</h2>
-            <p className="mt-1 text-sm text-neutral-400">
-              Net margin:{" "}
-              <span
-                className={
-                  profitMargin >= 0 ? "text-emerald-300" : "text-red-300"
-                }
-              >
-                {profitMargin.toFixed(2)}%
-              </span>
-            </p>
-          </div>
-          <p className="text-sm text-neutral-400">
-            Formula: net profit = sales - product cost + delivery charge -
-            discount - courier - packaging - payment fee - other cost
-          </p>
-        </div>
-      </div>
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Customer Delivery" value={formatPrice(summary.deliveryCharge)} hint="Income from customer" />
+        <StatCard label="Courier Cost" value={formatPrice(summary.actualCourierCost)} hint="Paid to courier company" />
+        <StatCard label="Packaging Cost" value={formatPrice(summary.packagingCost)} hint="Fixed 20 per order" />
+        <StatCard label="Gross Profit" value={formatPrice(summary.grossProfit)} hint="Sales - product cost" />
+      </section>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <div className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-950">
-          <div className="border-b border-neutral-800 px-4 py-4">
-            <h2 className="text-lg font-black text-white">Status Breakdown</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-neutral-800 text-left text-sm">
-              <thead className="bg-black/60 text-xs uppercase tracking-[0.15em] text-neutral-500">
+      <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-4">
+          <h2 className="text-lg font-black text-white">Status Breakdown</h2>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-neutral-800 text-xs uppercase tracking-[0.12em] text-neutral-500">
                 <tr>
-                  <th className="px-4 py-4">Status</th>
-                  <th className="px-4 py-4">Orders</th>
-                  <th className="px-4 py-4">Sales</th>
-                  <th className="px-4 py-4">Net Profit</th>
+                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3">Orders</th>
+                  <th className="px-3 py-3">Sales</th>
+                  <th className="px-3 py-3">Profit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-900">
-                {loading ? (
+              <tbody className="divide-y divide-neutral-800">
+                {statusBreakdown.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-10 text-center text-neutral-400"
-                    >
-                      Loading...
-                    </td>
-                  </tr>
-                ) : statusBreakdown.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-10 text-center text-neutral-400"
-                    >
+                    <td colSpan={4} className="px-3 py-8 text-center text-neutral-500">
                       No data found
                     </td>
                   </tr>
                 ) : (
                   statusBreakdown.map((item) => (
                     <tr key={item.status}>
-                      <td className="px-4 py-4 font-bold text-white">
+                      <td className="px-3 py-3 font-bold text-white">
                         {statusLabel(item.status)}
                       </td>
-                      <td className="px-4 py-4 text-neutral-300">
-                        {item.orderCount}
-                      </td>
-                      <td className="px-4 py-4 text-neutral-300">
+                      <td className="px-3 py-3 text-neutral-300">{item.orderCount}</td>
+                      <td className="px-3 py-3 text-neutral-300">
                         {formatPrice(item.totalSales)}
                       </td>
                       <td
-                        className={`px-4 py-4 font-black ${item.netProfit >= 0 ? "text-emerald-300" : "text-red-300"}`}
+                        className={`px-3 py-3 font-black ${
+                          item.netProfit >= 0 ? "text-emerald-300" : "text-red-300"
+                        }`}
                       >
                         {formatPrice(item.netProfit)}
                       </td>
@@ -552,65 +411,58 @@ export default function ProfitLossReport() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-950">
-          <div className="border-b border-neutral-800 px-4 py-4">
-            <h2 className="text-lg font-black text-white">
-              Top Product Profit
-            </h2>
+        <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-300">
+              <FaSearchDollar size={18} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-white">Top Product Profit</h2>
+              <p className="text-xs text-neutral-500">Product level sales - cost only</p>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-neutral-800 text-left text-sm">
-              <thead className="bg-black/60 text-xs uppercase tracking-[0.15em] text-neutral-500">
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[650px] text-left text-sm">
+              <thead className="border-b border-neutral-800 text-xs uppercase tracking-[0.12em] text-neutral-500">
                 <tr>
-                  <th className="px-4 py-4">Product</th>
-                  <th className="px-4 py-4">Qty</th>
-                  <th className="px-4 py-4">Sales</th>
-                  <th className="px-4 py-4">Profit</th>
+                  <th className="px-3 py-3">Product</th>
+                  <th className="px-3 py-3">Qty</th>
+                  <th className="px-3 py-3">Sales</th>
+                  <th className="px-3 py-3">Cost</th>
+                  <th className="px-3 py-3">Profit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-900">
-                {loading ? (
+              <tbody className="divide-y divide-neutral-800">
+                {productProfit.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-10 text-center text-neutral-400"
-                    >
-                      Loading...
-                    </td>
-                  </tr>
-                ) : productProfit.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-10 text-center text-neutral-400"
-                    >
+                    <td colSpan={5} className="px-3 py-8 text-center text-neutral-500">
                       No product profit found
                     </td>
                   </tr>
                 ) : (
                   productProfit.map((item) => (
                     <tr key={item.productId || item.productName}>
-                      <td className="px-4 py-4">
-                        <p className="max-w-[260px] truncate font-bold text-white">
-                          {item.productName}
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          {item.sku || "No SKU"}
-                        </p>
+                      <td className="px-3 py-3">
+                        <p className="font-bold text-white">{item.productName}</p>
+                        <p className="mt-1 text-xs text-neutral-500">{item.sku || "No SKU"}</p>
                       </td>
-                      <td className="px-4 py-4 text-neutral-300">
-                        {item.quantity}
-                      </td>
-                      <td className="px-4 py-4 text-neutral-300">
+                      <td className="px-3 py-3 text-neutral-300">{item.quantity}</td>
+                      <td className="px-3 py-3 text-neutral-300">
                         {formatPrice(item.totalSales)}
                       </td>
+                      <td className="px-3 py-3 text-neutral-300">
+                        {formatPrice(item.totalCost)}
+                      </td>
                       <td
-                        className={`px-4 py-4 font-black ${item.profit >= 0 ? "text-emerald-300" : "text-red-300"}`}
+                        className={`px-3 py-3 font-black ${
+                          item.profit >= 0 ? "text-emerald-300" : "text-red-300"
+                        }`}
                       >
                         {formatPrice(item.profit)}
-                        <span className="ml-2 text-xs text-neutral-500">
-                          ({item.profitMargin.toFixed(1)}%)
-                        </span>
+                        <p className="mt-1 text-xs text-neutral-500">
+                          {item.profitMargin.toFixed(1)}%
+                        </p>
                       </td>
                     </tr>
                   ))
@@ -619,7 +471,30 @@ export default function ProfitLossReport() {
             </table>
           </div>
         </div>
-      </div>
+      </section>
+
+      {missingCostItems.length > 0 ? (
+        <section className="rounded-3xl border border-red-500/20 bg-red-500/10 p-4">
+          <h2 className="text-lg font-black text-red-200">Missing Cost Price</h2>
+          <p className="mt-1 text-sm text-red-200/70">
+            Ei items gula te cost price nai, tai profit accurate hobe na.
+          </p>
+
+          <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {missingCostItems.slice(0, 18).map((item, index) => (
+              <div
+                key={`${item.invoiceNo}-${item.productId || item.productName}-${index}`}
+                className="rounded-2xl border border-red-500/20 bg-black/40 p-3 text-sm"
+              >
+                <p className="font-black text-white">{item.productName}</p>
+                <p className="mt-1 text-xs text-red-200/70">
+                  Invoice: {item.invoiceNo} • Qty: {item.quantity}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

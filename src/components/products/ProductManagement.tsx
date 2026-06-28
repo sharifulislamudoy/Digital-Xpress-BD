@@ -579,7 +579,6 @@ export default function ProductManagement({ panelType }: ProductManagementProps)
                         </span>
                         {typeof product.stock === "number" && product.stock <= 0 && (
                           <span className="block text-[9px] text-gray-500">
-                            Status manual
                           </span>
                         )}
                       </div>

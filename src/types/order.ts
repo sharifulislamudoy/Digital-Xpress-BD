@@ -1,3 +1,5 @@
+// src/types/order.ts
+
 export type OrderStatus =
   | "pending"
   | "processing"
@@ -21,12 +23,18 @@ export interface OrderItem {
   unitPrice: number;
   totalPrice: number;
   createdAt?: string;
+
+  unitCostPrice?: number;
+  totalCost?: number;
+  profit?: number;
+  costBreakdown?: unknown;
 }
 
 export interface Order {
   id: string;
   invoiceNo: string;
   userId?: string | null;
+
   customerName: string;
   customerEmail?: string | null;
   customerPhone: string;
@@ -35,28 +43,45 @@ export interface Order {
   customerAddress: string;
   district: string;
   thana?: string | null;
+
   deliveryType: DeliveryType;
+
   totalAmount: number;
   deliveryCharge: number;
   discountAmount: number;
   paidAmount: number;
   dueAmount: number;
   codAmount: number;
+
   note?: string | null;
   itemDescription?: string | null;
+
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+
   courierName?: string | null;
   courierTrackingNumber?: string | null;
   courierNote?: string | null;
   courierAssignedAt?: string | null;
+
   shippedAt?: string | null;
   deliveredAt?: string | null;
   returnedAt?: string | null;
   cancelledAt?: string | null;
+
   createdAt: string;
   updatedAt: string;
+
   items: OrderItem[];
+
+  productCostTotal?: number;
+  grossProfit?: number;
+  actualCourierCost?: number;
+  packagingCost?: number;
+  paymentFee?: number;
+  otherCost?: number;
+  netProfit?: number;
+  inventoryRestoredAt?: string | null;
 }
 
 export const bdDistrictOptions = [
@@ -127,17 +152,52 @@ export const bdDistrictOptions = [
   "Thakurgaon",
 ] as const;
 
-export const DHAKA_DELIVERY_CHARGE = 80;
-export const OUTSIDE_DHAKA_DELIVERY_CHARGE = 130;
+export type BdDistrict = (typeof bdDistrictOptions)[number];
 
-export function isDhakaDistrict(district?: string | null) {
-  return (district || "").trim().toLowerCase().startsWith("dhaka");
+export interface DeliveryChargeSetting {
+  district: string;
+  charge: number;
 }
 
-export function getDeliveryChargeByDistrict(district?: string | null) {
-  return isDhakaDistrict(district)
-    ? DHAKA_DELIVERY_CHARGE
-    : OUTSIDE_DHAKA_DELIVERY_CHARGE;
+export const PACKAGING_COST_PER_ORDER = 20;
+
+export function normalizeDistrictName(value?: string | null) {
+  return (value || "").trim();
+}
+
+export function deliveryChargeMapFromSettings(
+  settings: DeliveryChargeSetting[] = [],
+) {
+  const map = new Map<string, number>();
+
+  settings.forEach((item) => {
+    const district = normalizeDistrictName(item.district);
+    const charge = Number(item.charge);
+
+    if (!district || !Number.isFinite(charge)) return;
+
+    map.set(district.toLowerCase(), Math.max(Math.round(charge), 0));
+  });
+
+  return map;
+}
+
+export function getDeliveryChargeByDistrictSettings(
+  district: string | null | undefined,
+  settings: DeliveryChargeSetting[] = [],
+) {
+  const districtName = normalizeDistrictName(district);
+  if (!districtName) return 0;
+
+  const chargeMap = deliveryChargeMapFromSettings(settings);
+  return chargeMap.get(districtName.toLowerCase()) || 0;
+}
+
+export function getDeliveryChargeByDistrict(
+  district: string | null | undefined,
+  settings: DeliveryChargeSetting[] = [],
+) {
+  return getDeliveryChargeByDistrictSettings(district, settings);
 }
 
 export const orderStatusOptions: { value: OrderStatus; label: string }[] = [
@@ -173,7 +233,7 @@ export interface OrderItemProfitFieldsPatch {
         quantity: number;
         unitCostPrice: number;
         totalCost: number;
-        source: "batch" | "legacy";
+        source: "batch" | "legacy" | "backorder";
       }>
     | null;
 }
@@ -188,3 +248,4 @@ export interface OrderProfitFieldsPatch {
   netProfit?: number;
   inventoryRestoredAt?: string | null;
 }
+export default getDeliveryChargeByDistrict;
