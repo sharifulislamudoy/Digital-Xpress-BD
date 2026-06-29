@@ -121,7 +121,6 @@ export interface Product {
   productType: ProductType;
 
   sku?: string | null;
-  productCode?: string | null;
   barcode?: string | null;
   modelName?: string | null;
 
@@ -143,14 +142,11 @@ export interface Product {
   stockStatus: StockStatus;
   stockStatusLabel?: string;
   lowStockAlertQuantity?: number;
-  soldQuantity?: number;
-  reservedQuantity?: number;
 
   inStock: boolean;
   isPublished?: boolean;
 
   isFeatured?: boolean;
-  isNewArrival?: boolean;
   isBestSeller?: boolean;
   isTrending?: boolean;
   isRecommended?: boolean;
@@ -190,54 +186,18 @@ export interface Product {
   refundPolicy?: string | null;
 
   deliveryInfo?: string | null;
-  deliveryCharge?: number | null;
-  insideDhakaDeliveryCharge?: number | null;
-  outsideDhakaDeliveryCharge?: number | null;
   deliveryTime?: string | null;
   cashOnDelivery?: boolean;
   freeDelivery?: boolean;
-  freeDeliveryMinAmount?: number | null;
 
   packageIncludes?: string[];
   packageWeight?: string | null;
   packageDimensions?: string | null;
 
-  supplierName?: string | null;
-  supplierPhone?: string | null;
-  supplierEmail?: string | null;
-  supplierAddress?: string | null;
-  supplierInvoiceNumber?: string | null;
-  internalNote?: string | null;
-
-  seoTitle?: string | null;
-  seoDescription?: string | null;
-  seoKeywords?: string[];
-  focusKeyword?: string | null;
-  canonicalUrl?: string | null;
-
-  ogTitle?: string | null;
-  ogDescription?: string | null;
-  ogImage?: string | null;
-
-  metaRobots?: string;
-  schemaJson?: any;
-
-  viewCount?: number;
-  wishlistCount?: number;
-  cartCount?: number;
-  orderCount?: number;
   averageRating?: number;
   totalReviews?: number;
   reviews?: ProductReview[];
 
-  createdById?: string | null;
-  createdByName?: string | null;
-  createdByEmail?: string | null;
-  updatedById?: string | null;
-  updatedByName?: string | null;
-  updatedByEmail?: string | null;
-
-  publishedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 
@@ -336,7 +296,6 @@ export function getProductBadges(product: Product): string[] {
   const badges: string[] = [];
 
   if (product.isFeatured) badges.push("Featured");
-  if (product.isNewArrival) badges.push("New");
   if (product.isBestSeller) badges.push("Best Seller");
   if (product.isTrending) badges.push("Trending");
   if (product.isRecommended) badges.push("Recommended");

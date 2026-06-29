@@ -1,5 +1,3 @@
-// src/components/products/ProductFormPage.tsx
-
 "use client";
 
 import {
@@ -37,7 +35,6 @@ type ProductFormState = {
   productType: ProductType;
 
   sku: string;
-  productCode: string;
   barcode: string;
   modelName: string;
 
@@ -57,13 +54,10 @@ type ProductFormState = {
   stock: string;
   stockStatus: StockStatus;
   lowStockAlertQuantity: string;
-  soldQuantity: string;
-  reservedQuantity: string;
 
   inStock: boolean;
   isPublished: boolean;
   isFeatured: boolean;
-  isNewArrival: boolean;
   isBestSeller: boolean;
   isTrending: boolean;
   isRecommended: boolean;
@@ -80,46 +74,13 @@ type ProductFormState = {
   refundPolicy: string;
 
   deliveryInfo: string;
-  deliveryCharge: string;
-  insideDhakaDeliveryCharge: string;
-  outsideDhakaDeliveryCharge: string;
   deliveryTime: string;
   cashOnDelivery: boolean;
   freeDelivery: boolean;
-  freeDeliveryMinAmount: string;
 
   packageIncludes: string;
   packageWeight: string;
   packageDimensions: string;
-
-  supplierName: string;
-  supplierPhone: string;
-  supplierEmail: string;
-  supplierAddress: string;
-  supplierInvoiceNumber: string;
-  internalNote: string;
-
-  seoTitle: string;
-  seoDescription: string;
-  seoKeywords: string;
-  focusKeyword: string;
-  canonicalUrl: string;
-
-  ogTitle: string;
-  ogDescription: string;
-  ogImage: string;
-
-  metaRobots: string;
-  schemaJson: string;
-
-  viewCount: string;
-  wishlistCount: string;
-  cartCount: string;
-  orderCount: string;
-  averageRating: string;
-  totalReviews: string;
-
-  publishedAt: string;
 
   sizeChartName: string;
   sizeChartTitle: string;
@@ -129,6 +90,7 @@ type ProductFormState = {
   sizeChartNote: string;
   sizeChartIsActive: boolean;
   sizeChartSortOrder: string;
+
   removeSizeChart: boolean;
   removeSizeChartImage: boolean;
   removeHoverImage: boolean;
@@ -162,7 +124,6 @@ const defaultForm: ProductFormState = {
   productType: "single",
 
   sku: "",
-  productCode: "",
   barcode: "",
   modelName: "",
 
@@ -182,13 +143,10 @@ const defaultForm: ProductFormState = {
   stock: "0",
   stockStatus: "IN_STOCK",
   lowStockAlertQuantity: "5",
-  soldQuantity: "0",
-  reservedQuantity: "0",
 
   inStock: true,
   isPublished: true,
   isFeatured: false,
-  isNewArrival: false,
   isBestSeller: false,
   isTrending: false,
   isRecommended: false,
@@ -205,46 +163,13 @@ const defaultForm: ProductFormState = {
   refundPolicy: "",
 
   deliveryInfo: "",
-  deliveryCharge: "",
-  insideDhakaDeliveryCharge: "",
-  outsideDhakaDeliveryCharge: "",
   deliveryTime: "",
   cashOnDelivery: true,
   freeDelivery: false,
-  freeDeliveryMinAmount: "",
 
   packageIncludes: "",
   packageWeight: "",
   packageDimensions: "",
-
-  supplierName: "",
-  supplierPhone: "",
-  supplierEmail: "",
-  supplierAddress: "",
-  supplierInvoiceNumber: "",
-  internalNote: "",
-
-  seoTitle: "",
-  seoDescription: "",
-  seoKeywords: "",
-  focusKeyword: "",
-  canonicalUrl: "",
-
-  ogTitle: "",
-  ogDescription: "",
-  ogImage: "",
-
-  metaRobots: "index,follow",
-  schemaJson: "",
-
-  viewCount: "0",
-  wishlistCount: "0",
-  cartCount: "0",
-  orderCount: "0",
-  averageRating: "0",
-  totalReviews: "0",
-
-  publishedAt: "",
 
   sizeChartName: "",
   sizeChartTitle: "",
@@ -254,6 +179,7 @@ const defaultForm: ProductFormState = {
   sizeChartNote: "",
   sizeChartIsActive: true,
   sizeChartSortOrder: "0",
+
   removeSizeChart: false,
   removeSizeChartImage: false,
   removeHoverImage: false,
@@ -265,7 +191,6 @@ const stringFields: Array<keyof ProductFormState> = [
   "slug",
   "productType",
   "sku",
-  "productCode",
   "barcode",
   "modelName",
   "shortDescription",
@@ -281,8 +206,6 @@ const stringFields: Array<keyof ProductFormState> = [
   "stock",
   "stockStatus",
   "lowStockAlertQuantity",
-  "soldQuantity",
-  "reservedQuantity",
   "mainImageAlt",
   "hoverImageAlt",
   "extraImagesAlt",
@@ -292,37 +215,10 @@ const stringFields: Array<keyof ProductFormState> = [
   "replacementPolicy",
   "refundPolicy",
   "deliveryInfo",
-  "deliveryCharge",
-  "insideDhakaDeliveryCharge",
-  "outsideDhakaDeliveryCharge",
   "deliveryTime",
-  "freeDeliveryMinAmount",
   "packageIncludes",
   "packageWeight",
   "packageDimensions",
-  "supplierName",
-  "supplierPhone",
-  "supplierEmail",
-  "supplierAddress",
-  "supplierInvoiceNumber",
-  "internalNote",
-  "seoTitle",
-  "seoDescription",
-  "seoKeywords",
-  "focusKeyword",
-  "canonicalUrl",
-  "ogTitle",
-  "ogDescription",
-  "ogImage",
-  "metaRobots",
-  "schemaJson",
-  "viewCount",
-  "wishlistCount",
-  "cartCount",
-  "orderCount",
-  "averageRating",
-  "totalReviews",
-  "publishedAt",
   "sizeChartName",
   "sizeChartTitle",
   "sizeChartDescription",
@@ -336,7 +232,6 @@ const booleanFields: Array<keyof ProductFormState> = [
   "inStock",
   "isPublished",
   "isFeatured",
-  "isNewArrival",
   "isBestSeller",
   "isTrending",
   "isRecommended",
@@ -369,18 +264,6 @@ function jsonText(value: unknown) {
   }
 }
 
-function datetimeLocal(value?: string | null) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const offset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - offset * 60 * 1000);
-
-  return local.toISOString().slice(0, 16);
-}
-
 function formFromProduct(product: Product): ProductFormState {
   return {
     ...defaultForm,
@@ -389,7 +272,6 @@ function formFromProduct(product: Product): ProductFormState {
     productType: product.productType || "single",
 
     sku: product.sku || "",
-    productCode: product.productCode || "",
     barcode: product.barcode || "",
     modelName: product.modelName || "",
 
@@ -409,13 +291,10 @@ function formFromProduct(product: Product): ProductFormState {
     stock: numberText(product.stock ?? 0),
     stockStatus: product.stockStatus || "IN_STOCK",
     lowStockAlertQuantity: numberText(product.lowStockAlertQuantity ?? 5),
-    soldQuantity: numberText(product.soldQuantity ?? 0),
-    reservedQuantity: numberText(product.reservedQuantity ?? 0),
 
     inStock: product.inStock ?? true,
     isPublished: product.isPublished ?? true,
     isFeatured: product.isFeatured ?? false,
-    isNewArrival: product.isNewArrival ?? false,
     isBestSeller: product.isBestSeller ?? false,
     isTrending: product.isTrending ?? false,
     isRecommended: product.isRecommended ?? false,
@@ -432,46 +311,13 @@ function formFromProduct(product: Product): ProductFormState {
     refundPolicy: product.refundPolicy || "",
 
     deliveryInfo: product.deliveryInfo || "",
-    deliveryCharge: numberText(product.deliveryCharge),
-    insideDhakaDeliveryCharge: numberText(product.insideDhakaDeliveryCharge),
-    outsideDhakaDeliveryCharge: numberText(product.outsideDhakaDeliveryCharge),
     deliveryTime: product.deliveryTime || "",
     cashOnDelivery: product.cashOnDelivery ?? true,
     freeDelivery: product.freeDelivery ?? false,
-    freeDeliveryMinAmount: numberText(product.freeDeliveryMinAmount),
 
     packageIncludes: listText(product.packageIncludes),
     packageWeight: product.packageWeight || "",
     packageDimensions: product.packageDimensions || "",
-
-    supplierName: product.supplierName || "",
-    supplierPhone: product.supplierPhone || "",
-    supplierEmail: product.supplierEmail || "",
-    supplierAddress: product.supplierAddress || "",
-    supplierInvoiceNumber: product.supplierInvoiceNumber || "",
-    internalNote: product.internalNote || "",
-
-    seoTitle: product.seoTitle || "",
-    seoDescription: product.seoDescription || "",
-    seoKeywords: listText(product.seoKeywords),
-    focusKeyword: product.focusKeyword || "",
-    canonicalUrl: product.canonicalUrl || "",
-
-    ogTitle: product.ogTitle || "",
-    ogDescription: product.ogDescription || "",
-    ogImage: product.ogImage || "",
-
-    metaRobots: product.metaRobots || "index,follow",
-    schemaJson: jsonText(product.schemaJson),
-
-    viewCount: numberText(product.viewCount ?? 0),
-    wishlistCount: numberText(product.wishlistCount ?? 0),
-    cartCount: numberText(product.cartCount ?? 0),
-    orderCount: numberText(product.orderCount ?? 0),
-    averageRating: numberText(product.averageRating ?? 0),
-    totalReviews: numberText(product.totalReviews ?? 0),
-
-    publishedAt: datetimeLocal(product.publishedAt),
 
     sizeChartName: product.sizeChart?.name || "",
     sizeChartTitle: product.sizeChart?.title || "",
@@ -481,6 +327,7 @@ function formFromProduct(product: Product): ProductFormState {
     sizeChartNote: product.sizeChart?.note || "",
     sizeChartIsActive: product.sizeChart?.isActive ?? true,
     sizeChartSortOrder: numberText(product.sizeChart?.sortOrder ?? 0),
+
     removeSizeChart: false,
     removeSizeChartImage: false,
     removeHoverImage: false,
@@ -531,13 +378,16 @@ function TextField({
         {label}
         {required ? " *" : ""}
       </label>
+
       <input
         type={type}
         value={value}
         readOnly={readOnly}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className={`${inputClass} ${readOnly ? "cursor-not-allowed bg-gray-950 text-gray-500" : ""}`}
+        className={`${inputClass} ${
+          readOnly ? "cursor-not-allowed bg-gray-950 text-gray-500" : ""
+        }`}
       />
     </div>
   );
@@ -566,6 +416,7 @@ function TextAreaField({
         {label}
         {required ? " *" : ""}
       </label>
+
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -591,6 +442,7 @@ function SelectField<T extends string>({
   return (
     <div>
       <label className={labelClass}>{label}</label>
+
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
@@ -629,11 +481,16 @@ function SwitchField({
           <span className="mt-1 block text-xs text-gray-500">{note}</span>
         )}
       </span>
+
       <span
-        className={`relative h-7 w-12 rounded-full transition ${checked ? "bg-orange-500" : "bg-gray-700"}`}
+        className={`relative h-7 w-12 rounded-full transition ${
+          checked ? "bg-orange-500" : "bg-gray-700"
+        }`}
       >
         <span
-          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${checked ? "left-6" : "left-1"}`}
+          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
+            checked ? "left-6" : "left-1"
+          }`}
         />
       </span>
     </button>
@@ -736,6 +593,7 @@ export default function ProductFormPage({
             cache: "no-store",
           },
         );
+
         const metaData = await metaResponse.json();
 
         if (!metaResponse.ok || !metaData.success) {
@@ -782,6 +640,7 @@ export default function ProductFormPage({
               cache: "no-store",
             },
           );
+
           const productData = await productResponse.json();
 
           if (!productResponse.ok || !productData.success) {
@@ -794,15 +653,18 @@ export default function ProductFormPage({
 
           setInitialProduct(product);
           setForm(formFromProduct(product));
+
           setCategoryId(
             product.category?.id ||
               product.categoryId ||
               loadedCategories[0]?.id ||
               "",
           );
+
           setSubCategoryId(
             product.subCategory?.id || product.subCategoryId || "",
           );
+
           setBrandMode("existing");
           setBrandId(
             product.brand?.id || product.brandId || loadedBrands[0]?.id || "",
@@ -878,8 +740,11 @@ export default function ProductFormPage({
       }
 
       toast.success(
-        `${uniqueNewFiles.length} extra image${uniqueNewFiles.length > 1 ? "s" : ""} added`,
+        `${uniqueNewFiles.length} extra image${
+          uniqueNewFiles.length > 1 ? "s" : ""
+        } added`,
       );
+
       return [...previous, ...uniqueNewFiles];
     });
 
@@ -1023,6 +888,7 @@ export default function ProductFormPage({
           ? "Product updated successfully"
           : "Product created successfully",
       );
+
       router.push(listHref);
       router.refresh();
     } catch (error) {
@@ -1049,9 +915,10 @@ export default function ProductFormPage({
             {isEdit ? "Edit Product" : "Create Product"}{" "}
             {panelType === "moderator" ? "(Moderator)" : ""}
           </h1>
+
           <p className="mt-1 text-sm text-gray-400">
-            Clean product form with every schema field grouped into maintainable
-            sections.
+            Create and update product information, pricing, stock, media,
+            warranty, delivery, package and size chart.
           </p>
         </div>
 
@@ -1068,6 +935,7 @@ export default function ProductFormPage({
           <h2 className="text-xl font-bold text-white">
             {isEdit ? "Update Product Details" : "New Product Details"}
           </h2>
+
           <p className="text-sm text-gray-500">
             SKU is auto generated if empty. Slug is auto generated from name if
             empty.
@@ -1085,36 +953,35 @@ export default function ProductFormPage({
                   onChange={(value) => setField("name", value)}
                   placeholder="iPhone 15 Pro Max"
                 />
+
                 <SelectField
                   label="Product Type"
                   value={form.productType}
                   onChange={(value) => setField("productType", value)}
                   options={productTypeOptions}
                 />
+
                 <TextField
                   label="Slug"
                   value={form.slug}
                   onChange={(value) => setField("slug", value)}
                   placeholder="Auto generated if empty"
                 />
+
                 <TextField
                   label="SKU"
                   value={form.sku}
                   onChange={(value) => setField("sku", value)}
                   placeholder="Auto generated 0001 if empty"
                 />
-                <TextField
-                  label="Product Code"
-                  value={form.productCode}
-                  onChange={(value) => setField("productCode", value)}
-                  placeholder="Internal product code"
-                />
+
                 <TextField
                   label="Barcode"
                   value={form.barcode}
                   onChange={(value) => setField("barcode", value)}
                   placeholder="UPC/EAN barcode"
                 />
+
                 <TextField
                   label="Model Name"
                   value={form.modelName}
@@ -1135,11 +1002,13 @@ export default function ProductFormPage({
                       <h4 className="text-sm font-semibold text-white">
                         Category *
                       </h4>
+
                       <p className="mt-1 text-xs text-gray-500">
                         নতুন category দরকার হলে Product Management page থেকে
                         Create Category & Sub-category button ব্যবহার করো.
                       </p>
                     </div>
+
                     <Link
                       href={listHref}
                       className="shrink-0 rounded-lg border border-orange-500/40 px-3 py-2 text-xs font-semibold text-orange-300 transition hover:bg-orange-500/10"
@@ -1163,6 +1032,7 @@ export default function ProductFormPage({
                       className={inputClass}
                     >
                       <option value="">Select category</option>
+
                       {categories.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
@@ -1193,10 +1063,12 @@ export default function ProductFormPage({
                           </span>
                         )}
                       </div>
+
                       <div>
                         <p className="text-sm font-semibold text-white">
                           {selectedCategory.name}
                         </p>
+
                         <p className="text-xs text-gray-500">
                           /{selectedCategory.slug}
                         </p>
@@ -1210,6 +1082,7 @@ export default function ProductFormPage({
                     <h4 className="text-sm font-semibold text-white">
                       Sub-category
                     </h4>
+
                     <p className="mt-1 text-xs text-gray-500">
                       Optional. Selected category অনুযায়ী sub-category list
                       দেখাবে.
@@ -1223,6 +1096,7 @@ export default function ProductFormPage({
                     className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-60`}
                   >
                     <option value="">No sub-category</option>
+
                     {subCategories.map((subCategory) => (
                       <option key={subCategory.id} value={subCategory.id}>
                         {subCategory.name}
@@ -1242,6 +1116,7 @@ export default function ProductFormPage({
                     <label className="block text-sm font-semibold text-white">
                       Brand *
                     </label>
+
                     <button
                       type="button"
                       onClick={() =>
@@ -1262,6 +1137,7 @@ export default function ProductFormPage({
                       className={inputClass}
                     >
                       <option value="">Select brand</option>
+
                       {brands.map((brand) => (
                         <option key={brand.id} value={brand.id}>
                           {brand.name}
@@ -1289,6 +1165,7 @@ export default function ProductFormPage({
                   rows={2}
                   placeholder="Small summary for cards and details page"
                 />
+
                 <TextAreaField
                   label="Full Description"
                   required
@@ -1297,18 +1174,21 @@ export default function ProductFormPage({
                   rows={6}
                   placeholder="Write full product description"
                 />
+
                 <TextField
                   label="Key Features"
                   value={form.keyFeatures}
                   onChange={(value) => setField("keyFeatures", value)}
                   placeholder="Comma separated: 5G, OLED, 48MP camera"
                 />
+
                 <TextField
                   label="Highlights"
                   value={form.highlights}
                   onChange={(value) => setField("highlights", value)}
                   placeholder="Comma separated: Fast charging, Warranty"
                 />
+
                 <TextAreaField
                   label="Specifications JSON"
                   value={form.specifications}
@@ -1316,12 +1196,14 @@ export default function ProductFormPage({
                   mono
                   placeholder='{"Display":"6.7 inch","RAM":"8GB"}'
                 />
+
                 <TextField
                   label="Tags"
                   value={form.tags}
                   onChange={(value) => setField("tags", value)}
                   placeholder="Comma separated: mobile, apple, smartphone"
                 />
+
                 <TextField
                   label="Search Keywords"
                   value={form.searchKeywords}
@@ -1340,6 +1222,7 @@ export default function ProductFormPage({
                   value={form.mrp}
                   onChange={(value) => setField("mrp", value)}
                 />
+
                 <TextField
                   label="Cost Price"
                   type="number"
@@ -1347,6 +1230,7 @@ export default function ProductFormPage({
                   onChange={(value) => setField("costPrice", value)}
                   placeholder="Internal cost only"
                 />
+
                 <TextField
                   label="Selling Price"
                   required
@@ -1361,9 +1245,11 @@ export default function ProductFormPage({
                 <p className="text-sm text-gray-400">
                   Final selling price preview
                 </p>
+
                 <p className="text-2xl font-bold text-orange-400">
                   {formatPrice(sellingPricePreview)}
                 </p>
+
                 <p className="mt-1 text-xs text-gray-500">
                   Cost price is internal only. Selling price is saved directly
                   and is not calculated from cost.
@@ -1379,29 +1265,19 @@ export default function ProductFormPage({
                   value={form.stock}
                   onChange={(value) => setField("stock", value)}
                 />
+
                 <SelectField
                   label="Stock Status"
                   value={form.stockStatus}
                   onChange={(value) => setField("stockStatus", value)}
                   options={stockStatusOptions}
                 />
+
                 <TextField
                   label="Low Stock Alert Qty"
                   type="number"
                   value={form.lowStockAlertQuantity}
                   onChange={(value) => setField("lowStockAlertQuantity", value)}
-                />
-                <TextField
-                  label="Sold Quantity"
-                  type="number"
-                  value={form.soldQuantity}
-                  onChange={(value) => setField("soldQuantity", value)}
-                />
-                <TextField
-                  label="Reserved Quantity"
-                  type="number"
-                  value={form.reservedQuantity}
-                  onChange={(value) => setField("reservedQuantity", value)}
                 />
               </div>
 
@@ -1410,37 +1286,39 @@ export default function ProductFormPage({
                   label="In Stock"
                   checked={form.inStock}
                   onChange={(value) => setField("inStock", value)}
+                  note="Stock 0 বা negative হলেও order allow থাকবে, যদি manually unavailable না করা হয়."
                 />
+
                 <SwitchField
                   label="Published"
                   checked={form.isPublished}
                   onChange={(value) => setField("isPublished", value)}
                 />
+
                 <SwitchField
                   label="Featured"
                   checked={form.isFeatured}
                   onChange={(value) => setField("isFeatured", value)}
                 />
-                <SwitchField
-                  label="New Arrival"
-                  checked={form.isNewArrival}
-                  onChange={(value) => setField("isNewArrival", value)}
-                />
+
                 <SwitchField
                   label="Best Seller"
                   checked={form.isBestSeller}
                   onChange={(value) => setField("isBestSeller", value)}
                 />
+
                 <SwitchField
                   label="Trending"
                   checked={form.isTrending}
                   onChange={(value) => setField("isTrending", value)}
                 />
+
                 <SwitchField
                   label="Recommended"
                   checked={form.isRecommended}
                   onChange={(value) => setField("isRecommended", value)}
                 />
+
                 <SwitchField
                   label="Flash Sale"
                   checked={form.isFlashSale}
@@ -1457,64 +1335,42 @@ export default function ProductFormPage({
                   onChange={(value) => setField("warrantyDuration", value)}
                   placeholder="1 year"
                 />
+
                 <TextField
                   label="Warranty Details"
                   value={form.warrantyDetails}
                   onChange={(value) => setField("warrantyDetails", value)}
                 />
+
                 <TextField
                   label="Return Policy"
                   value={form.returnPolicy}
                   onChange={(value) => setField("returnPolicy", value)}
                 />
+
                 <TextField
                   label="Replacement Policy"
                   value={form.replacementPolicy}
                   onChange={(value) => setField("replacementPolicy", value)}
                 />
+
                 <TextField
                   label="Refund Policy"
                   value={form.refundPolicy}
                   onChange={(value) => setField("refundPolicy", value)}
                 />
+
                 <TextField
                   label="Delivery Info"
                   value={form.deliveryInfo}
                   onChange={(value) => setField("deliveryInfo", value)}
                 />
-                <TextField
-                  label="Delivery Charge"
-                  type="number"
-                  value={form.deliveryCharge}
-                  onChange={(value) => setField("deliveryCharge", value)}
-                />
-                <TextField
-                  label="Inside Dhaka Charge"
-                  type="number"
-                  value={form.insideDhakaDeliveryCharge}
-                  onChange={(value) =>
-                    setField("insideDhakaDeliveryCharge", value)
-                  }
-                />
-                <TextField
-                  label="Outside Dhaka Charge"
-                  type="number"
-                  value={form.outsideDhakaDeliveryCharge}
-                  onChange={(value) =>
-                    setField("outsideDhakaDeliveryCharge", value)
-                  }
-                />
+
                 <TextField
                   label="Delivery Time"
                   value={form.deliveryTime}
                   onChange={(value) => setField("deliveryTime", value)}
                   placeholder="2-3 business days"
-                />
-                <TextField
-                  label="Free Delivery Min Amount"
-                  type="number"
-                  value={form.freeDeliveryMinAmount}
-                  onChange={(value) => setField("freeDeliveryMinAmount", value)}
                 />
               </div>
 
@@ -1524,6 +1380,7 @@ export default function ProductFormPage({
                   checked={form.cashOnDelivery}
                   onChange={(value) => setField("cashOnDelivery", value)}
                 />
+
                 <SwitchField
                   label="Free Delivery"
                   checked={form.freeDelivery}
@@ -1542,12 +1399,14 @@ export default function ProductFormPage({
                     placeholder="Comma separated: Phone, Charger, Cable"
                   />
                 </div>
+
                 <TextField
                   label="Package Weight"
                   value={form.packageWeight}
                   onChange={(value) => setField("packageWeight", value)}
                   placeholder="500g"
                 />
+
                 <TextField
                   label="Package Dimensions"
                   value={form.packageDimensions}
@@ -1555,171 +1414,6 @@ export default function ProductFormPage({
                   placeholder="20x10x5 cm"
                 />
               </div>
-            </Section>
-
-            <Section
-              title="Supplier & Internal Note"
-              note="This section is returned only from admin product API."
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <TextField
-                  label="Supplier Name"
-                  value={form.supplierName}
-                  onChange={(value) => setField("supplierName", value)}
-                />
-                <TextField
-                  label="Supplier Phone"
-                  value={form.supplierPhone}
-                  onChange={(value) => setField("supplierPhone", value)}
-                />
-                <TextField
-                  label="Supplier Email"
-                  value={form.supplierEmail}
-                  onChange={(value) => setField("supplierEmail", value)}
-                />
-                <TextField
-                  label="Supplier Address"
-                  value={form.supplierAddress}
-                  onChange={(value) => setField("supplierAddress", value)}
-                />
-                <TextField
-                  label="Supplier Invoice Number"
-                  value={form.supplierInvoiceNumber}
-                  onChange={(value) => setField("supplierInvoiceNumber", value)}
-                />
-                <TextField
-                  label="Internal Note"
-                  value={form.internalNote}
-                  onChange={(value) => setField("internalNote", value)}
-                />
-              </div>
-            </Section>
-
-            <Section title="SEO & Metadata">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <TextField
-                  label="SEO Title"
-                  value={form.seoTitle}
-                  onChange={(value) => setField("seoTitle", value)}
-                />
-                <TextField
-                  label="SEO Description"
-                  value={form.seoDescription}
-                  onChange={(value) => setField("seoDescription", value)}
-                />
-                <TextField
-                  label="SEO Keywords"
-                  value={form.seoKeywords}
-                  onChange={(value) => setField("seoKeywords", value)}
-                  placeholder="Comma separated"
-                />
-                <TextField
-                  label="Focus Keyword"
-                  value={form.focusKeyword}
-                  onChange={(value) => setField("focusKeyword", value)}
-                />
-                <TextField
-                  label="Canonical URL"
-                  value={form.canonicalUrl}
-                  onChange={(value) => setField("canonicalUrl", value)}
-                />
-                <TextField
-                  label="Meta Robots"
-                  value={form.metaRobots}
-                  onChange={(value) => setField("metaRobots", value)}
-                />
-                <TextField
-                  label="OG Title"
-                  value={form.ogTitle}
-                  onChange={(value) => setField("ogTitle", value)}
-                />
-                <TextField
-                  label="OG Description"
-                  value={form.ogDescription}
-                  onChange={(value) => setField("ogDescription", value)}
-                />
-                <TextField
-                  label="OG Image URL"
-                  value={form.ogImage}
-                  onChange={(value) => setField("ogImage", value)}
-                />
-                <TextAreaField
-                  label="Schema JSON"
-                  value={form.schemaJson}
-                  onChange={(value) => setField("schemaJson", value)}
-                  mono
-                  placeholder='{"@context":"https://schema.org","@type":"Product"}'
-                />
-              </div>
-            </Section>
-
-            <Section
-              title="Stats & Audit Values"
-              note="You can leave these as default. Usually order/review logic should update these automatically."
-            >
-              <div className="grid gap-4 sm:grid-cols-3">
-                <TextField
-                  label="View Count"
-                  type="number"
-                  value={form.viewCount}
-                  onChange={(value) => setField("viewCount", value)}
-                />
-                <TextField
-                  label="Wishlist Count"
-                  type="number"
-                  value={form.wishlistCount}
-                  onChange={(value) => setField("wishlistCount", value)}
-                />
-                <TextField
-                  label="Cart Count"
-                  type="number"
-                  value={form.cartCount}
-                  onChange={(value) => setField("cartCount", value)}
-                />
-                <TextField
-                  label="Order Count"
-                  type="number"
-                  value={form.orderCount}
-                  onChange={(value) => setField("orderCount", value)}
-                />
-                <TextField
-                  label="Average Rating"
-                  type="number"
-                  value={form.averageRating}
-                  onChange={(value) => setField("averageRating", value)}
-                />
-                <TextField
-                  label="Total Reviews"
-                  type="number"
-                  value={form.totalReviews}
-                  onChange={(value) => setField("totalReviews", value)}
-                />
-                <TextField
-                  label="Published At"
-                  type="datetime-local"
-                  value={form.publishedAt}
-                  onChange={(value) => setField("publishedAt", value)}
-                />
-              </div>
-
-              {initialProduct && (
-                <div className="mt-4 grid gap-3 rounded-xl border border-gray-800 bg-gray-950 p-4 text-xs text-gray-400 sm:grid-cols-2">
-                  <p>Created By: {initialProduct.createdByEmail || "N/A"}</p>
-                  <p>Updated By: {initialProduct.updatedByEmail || "N/A"}</p>
-                  <p>
-                    Created At:{" "}
-                    {initialProduct.createdAt
-                      ? new Date(initialProduct.createdAt).toLocaleString()
-                      : "N/A"}
-                  </p>
-                  <p>
-                    Updated At:{" "}
-                    {initialProduct.updatedAt
-                      ? new Date(initialProduct.updatedAt).toLocaleString()
-                      : "N/A"}
-                  </p>
-                </div>
-              )}
             </Section>
           </div>
 
@@ -1739,6 +1433,7 @@ export default function ProductFormPage({
                     </span>
                   )}
                 </div>
+
                 <input
                   type="file"
                   accept="image/*"
@@ -1753,6 +1448,7 @@ export default function ProductFormPage({
                   }
                 />
               </label>
+
               <div className="mt-4">
                 <TextField
                   label="Main Image Alt Text"
@@ -1777,6 +1473,7 @@ export default function ProductFormPage({
                     </span>
                   )}
                 </div>
+
                 <input
                   type="file"
                   accept="image/*"
@@ -1791,12 +1488,14 @@ export default function ProductFormPage({
                   }
                 />
               </label>
+
               <div className="mt-4 space-y-3">
                 <TextField
                   label="Hover Image Alt Text"
                   value={form.hoverImageAlt}
                   onChange={(value) => setField("hoverImageAlt", value)}
                 />
+
                 {initialProduct?.hoverImageUrl && (
                   <SwitchField
                     label="Remove Existing Hover Image"
@@ -1823,6 +1522,7 @@ export default function ProductFormPage({
                     </span>
                   )}
                 </div>
+
                 <input
                   type="file"
                   accept="video/*"
@@ -1837,6 +1537,7 @@ export default function ProductFormPage({
                   }
                 />
               </label>
+
               {initialProduct?.videoUrl && (
                 <div className="mt-4">
                   <SwitchField
@@ -1859,13 +1560,18 @@ export default function ProductFormPage({
                         type="button"
                         key={image.id}
                         onClick={() => toggleRemoveExistingExtraImage(image.id)}
-                        className={`relative overflow-hidden rounded-xl border ${removed ? "border-red-500 opacity-45" : "border-gray-800"}`}
+                        className={`relative overflow-hidden rounded-xl border ${
+                          removed
+                            ? "border-red-500 opacity-45"
+                            : "border-gray-800"
+                        }`}
                       >
                         <img
                           src={image.imageUrl}
                           alt={image.altText || "Extra image"}
                           className="h-24 w-full object-contain p-2"
                         />
+
                         <span className="absolute bottom-1 left-1 right-1 rounded bg-black/80 py-1 text-[10px] text-white">
                           {removed ? "Will remove" : "Click remove"}
                         </span>
@@ -1919,6 +1625,7 @@ export default function ProductFormPage({
                           <p className="truncate text-xs font-semibold text-gray-200">
                             {file.name}
                           </p>
+
                           <p className="mt-1 text-[11px] text-gray-500">
                             {(file.size / 1024 / 1024).toFixed(2)} MB
                           </p>
@@ -1954,6 +1661,7 @@ export default function ProductFormPage({
                       </span>
                     )}
                   </div>
+
                   <input
                     type="file"
                     accept="image/*"
@@ -1975,23 +1683,27 @@ export default function ProductFormPage({
                   onChange={(value) => setField("sizeChartName", value)}
                   placeholder="Men Shirt Size Chart"
                 />
+
                 <TextField
                   label="Size Chart Title"
                   value={form.sizeChartTitle}
                   onChange={(value) => setField("sizeChartTitle", value)}
                 />
+
                 <TextAreaField
                   label="Size Chart Description"
                   value={form.sizeChartDescription}
                   onChange={(value) => setField("sizeChartDescription", value)}
                   rows={3}
                 />
+
                 <TextField
                   label="Unit"
                   value={form.sizeChartUnit}
                   onChange={(value) => setField("sizeChartUnit", value)}
                   placeholder="inch / cm"
                 />
+
                 <TextAreaField
                   label="Chart Data JSON"
                   value={form.sizeChartData}
@@ -1999,11 +1711,13 @@ export default function ProductFormPage({
                   mono
                   placeholder='[{"size":"M","chest":"38","length":"27"}]'
                 />
+
                 <TextField
                   label="Note"
                   value={form.sizeChartNote}
                   onChange={(value) => setField("sizeChartNote", value)}
                 />
+
                 <TextField
                   label="Sort Order"
                   type="number"
@@ -2024,6 +1738,7 @@ export default function ProductFormPage({
                       checked={form.removeSizeChart}
                       onChange={(value) => setField("removeSizeChart", value)}
                     />
+
                     <SwitchField
                       label="Remove Size Chart Image"
                       checked={form.removeSizeChartImage}
@@ -2045,6 +1760,7 @@ export default function ProductFormPage({
           >
             Cancel
           </Link>
+
           <button
             type="button"
             onClick={handleSubmit}

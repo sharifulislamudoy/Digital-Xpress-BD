@@ -120,7 +120,7 @@ export default function HeroSlider() {
 
   return (
     <section className="w-full bg-black py-3 sm:py-4 md:py-6">
-      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6">
+      <div className="mx-auto w-full">
         <Swiper
           modules={[Autoplay, Pagination]}
           slidesPerView={1}

@@ -345,28 +345,6 @@ function displayValue(value: unknown): ReactNode {
   return String(parsedValue);
 }
 
-function formatMoney(value: unknown): ReactNode {
-  const parsedValue = parseJsonLike(value);
-
-  if (!hasRenderableValue(parsedValue)) return null;
-
-  if (typeof parsedValue === "number") {
-    return formatPrice(parsedValue);
-  }
-
-  if (typeof parsedValue === "string") {
-    const numericValue = Number(parsedValue.trim());
-
-    if (Number.isFinite(numericValue)) {
-      return formatPrice(numericValue);
-    }
-
-    return parsedValue.trim();
-  }
-
-  return displayValue(parsedValue);
-}
-
 function compactFields(
   fields: Array<InfoField | false | null | undefined>
 ): InfoField[] {
@@ -556,13 +534,9 @@ function hasWarrantyTabData(product: Product) {
     hasRenderableValue(product.replacementPolicy) ||
     hasRenderableValue(product.refundPolicy) ||
     hasRenderableValue(product.deliveryInfo) ||
-    hasRenderableValue(product.deliveryCharge) ||
-    hasRenderableValue(product.insideDhakaDeliveryCharge) ||
-    hasRenderableValue(product.outsideDhakaDeliveryCharge) ||
     hasRenderableValue(product.deliveryTime) ||
     hasRenderableValue(product.cashOnDelivery) ||
     hasRenderableValue(product.freeDelivery) ||
-    hasRenderableValue(product.freeDeliveryMinAmount) ||
     hasRenderableValue(product.packageIncludes) ||
     hasRenderableValue(product.packageWeight) ||
     hasRenderableValue(product.packageDimensions)
@@ -1943,18 +1917,6 @@ export default function ProductDetailsPage({
           label: "Delivery Info",
           value: displayValue(product.deliveryInfo),
         },
-        hasRenderableValue(product.deliveryCharge) && {
-          label: "Delivery Charge",
-          value: formatMoney(product.deliveryCharge),
-        },
-        hasRenderableValue(product.insideDhakaDeliveryCharge) && {
-          label: "Inside Dhaka Charge",
-          value: formatMoney(product.insideDhakaDeliveryCharge),
-        },
-        hasRenderableValue(product.outsideDhakaDeliveryCharge) && {
-          label: "Outside Dhaka Charge",
-          value: formatMoney(product.outsideDhakaDeliveryCharge),
-        },
         hasRenderableValue(product.deliveryTime) && {
           label: "Delivery Time",
           value: displayValue(product.deliveryTime),
@@ -1966,10 +1928,6 @@ export default function ProductDetailsPage({
         hasRenderableValue(product.freeDelivery) && {
           label: "Free Delivery",
           value: displayValue(product.freeDelivery),
-        },
-        hasRenderableValue(product.freeDeliveryMinAmount) && {
-          label: "Free Delivery Min Amount",
-          value: formatMoney(product.freeDeliveryMinAmount),
         },
         hasRenderableValue(product.packageIncludes) && {
           label: "Package Includes",
