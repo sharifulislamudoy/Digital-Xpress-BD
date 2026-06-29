@@ -922,6 +922,27 @@ function formatReviewDate(value: string) {
   });
 }
 
+
+function getSessionAuthToken(session: unknown) {
+  const sessionWithToken = session as
+    | {
+        accessToken?: string;
+        user?: { accessToken?: string; token?: string } | null;
+      }
+    | null;
+
+  return (
+    sessionWithToken?.accessToken ||
+    sessionWithToken?.user?.accessToken ||
+    sessionWithToken?.user?.token ||
+    ""
+  );
+}
+
+function normalizeEmail(value?: string | null) {
+  return String(value || "").trim().toLowerCase();
+}
+
 export default function ProductDetailsPage({
   categoryKey,
   productKey,
@@ -942,7 +963,9 @@ export default function ProductDetailsPage({
   const [reviewComment, setReviewComment] = useState("");
   const [reviewImages, setReviewImages] = useState<ReviewImageDraft[]>([]);
   const reviewImagesRef = useRef<ReviewImageDraft[]>([]);
+  const reviewSliderRef = useRef<HTMLDivElement | null>(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isDeletingReviewId, setIsDeletingReviewId] = useState<string | null>(null);
 
   const badges = useMemo(
     () => (product ? getProductBadges(product) : []),
@@ -1253,18 +1276,7 @@ export default function ProductDetailsPage({
       setIsSubmittingReview(true);
 
       const headers = new Headers();
-
-      const sessionWithToken = session as
-        | (typeof session & {
-          accessToken?: string;
-          user?: { accessToken?: string; token?: string } | null;
-        })
-        | null;
-
-      const token =
-        sessionWithToken?.accessToken ||
-        sessionWithToken?.user?.accessToken ||
-        sessionWithToken?.user?.token;
+      const token = getSessionAuthToken(session);
 
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
@@ -1322,6 +1334,90 @@ export default function ProductDetailsPage({
       toast.error("Error saving review");
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const scrollReviewSlider = (direction: "prev" | "next") => {
+    const slider = reviewSliderRef.current;
+
+    if (!slider) return;
+
+    const scrollAmount = Math.min(slider.clientWidth * 0.9, 460);
+
+    slider.scrollBy({
+      left: direction === "next" ? scrollAmount : -scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
+  const handleReviewDelete = async (reviewId: string) => {
+    if (!user) {
+      toast.error("Please login to delete your review", {
+        duration: 3000,
+        icon: "🔒",
+      });
+      return;
+    }
+
+    if (!API_BASE) {
+      toast.error("NEXT_PUBLIC_BACKEND_URL is missing");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your review? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsDeletingReviewId(reviewId);
+
+      const headers = new Headers();
+      const token = getSessionAuthToken(session);
+
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/v1/products/${encodeURIComponent(product.id)}/reviews/${encodeURIComponent(reviewId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+          headers,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Failed to delete review");
+        return;
+      }
+
+      const nextReviews = Array.isArray(data.reviews)
+        ? data.reviews
+        : reviews.filter((review) => review.id !== reviewId);
+
+      setReviews(nextReviews);
+      setProduct((currentProduct) =>
+        currentProduct
+          ? {
+              ...currentProduct,
+              reviews: nextReviews,
+              averageRating: Number(data.averageRating || 0),
+              totalReviews: Number(data.totalReviews || nextReviews.length),
+            }
+          : currentProduct
+      );
+
+      toast.success(data.message || "Review deleted successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error deleting review");
+    } finally {
+      setIsDeletingReviewId(null);
     }
   };
 
@@ -1675,50 +1771,73 @@ export default function ProductDetailsPage({
             </div>
 
             {reviews.length > 0 ? (
-              <div className="space-y-4 grid grid-cols-1 gap-4 lg:grid-cols-3 w-full">
-                {reviews.map((review) => {
-                  const reviewerName = review.userName || "Customer";
-                  const avatarText = reviewerName.trim().charAt(0).toUpperCase() || "C";
-                  const reviewDate = formatReviewDate(review.createdAt);
+              <div className="relative">
+                <div
+                  ref={reviewSliderRef}
+                  className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
+                  {reviews.map((review) => {
+                    const reviewerName = review.userName || "Customer";
+                    const avatarText = reviewerName.trim().charAt(0).toUpperCase() || "C";
+                    const reviewDate = formatReviewDate(review.createdAt);
+                    const currentUserEmail = normalizeEmail(user?.email);
+                    const reviewUserEmail = normalizeEmail(review.userEmail);
+                    const isOwnReview = Boolean(
+                      currentUserEmail && reviewUserEmail === currentUserEmail
+                    );
+                    const isDeletingThisReview = isDeletingReviewId === review.id;
 
-                  return (
-                    <article
-                      key={review.id}
-                      className="rounded-3xl border border-gray-800 bg-gray-950/90 p-4 transition hover:border-gray-700 sm:p-5"
-                    >
-                      <div className="flex gap-3 sm:gap-4 flex-col">
-                        <div className="flex gap-3 sm:gap-4">
-                          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-orange-500/20 bg-orange-500/10 text-sm font-black text-orange-300 sm:h-12 sm:w-12">
-                            {avatarText}
-                          </div>
+                    return (
+                      <article
+                        key={review.id}
+                        className="min-h-[300px] w-[88%] shrink-0 snap-start rounded-3xl border border-gray-800 bg-[linear-gradient(145deg,rgba(17,24,39,0.96),rgba(3,7,18,0.98))] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.28)] transition hover:border-orange-500/35 sm:w-[430px] sm:p-5 lg:w-[455px]"
+                      >
+                        <div className="flex h-full flex-col">
+                          <div className="flex items-start gap-3 sm:gap-4">
+                            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-orange-500/25 bg-orange-500/10 text-sm font-black text-orange-300 sm:h-12 sm:w-12">
+                              {avatarText}
+                            </div>
 
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="min-w-0">
-                                <h4 className="break-words text-sm font-black text-white sm:text-base">
-                                  {reviewerName}
-                                </h4>
-                                <div className="mt-1 flex flex-wrap items-center gap-2">
-                                  <RatingStars value={review.rating} />
-                                  <span className="rounded-full border border-gray-800 bg-black px-2 py-0.5 text-[11px] font-semibold text-gray-400">
-                                    {review.rating}/5
-                                  </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <h4 className="break-words text-sm font-black text-white sm:text-base">
+                                    {reviewerName}
+                                  </h4>
+
+                                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                                    <RatingStars value={review.rating} />
+                                    <span className="rounded-full border border-gray-800 bg-black px-2 py-0.5 text-[11px] font-semibold text-gray-400">
+                                      {review.rating}/5
+                                    </span>
+                                  </div>
+
+                                  {reviewDate && (
+                                    <p className="mt-1 text-xs font-medium text-gray-500">
+                                      {reviewDate}
+                                    </p>
+                                  )}
                                 </div>
-                                {reviewDate && (
-                                  <p className="shrink-0 text-xs font-medium text-gray-500">
-                                    {reviewDate}
-                                  </p>
+
+                                {isOwnReview && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReviewDelete(review.id)}
+                                    disabled={isDeletingThisReview}
+                                    className="shrink-0 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:border-red-500/60 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-gray-800 disabled:bg-gray-900 disabled:text-gray-500"
+                                  >
+                                    {isDeletingThisReview ? "Deleting..." : "Delete"}
+                                  </button>
                                 )}
                               </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="w-full h-auto">
-                          <p className="mt-4 whitespace-pre-line break-words text-sm leading-7 text-gray-300">
+
+                          <p className="mt-4 line-clamp-5 min-h-[90px] whitespace-pre-line break-words text-sm leading-7 text-gray-300">
                             {review.comment}
                           </p>
 
-                          {Array.isArray(review.images) && review.images.length > 0 && (
+                          {Array.isArray(review.images) && review.images.length > 0 ? (
                             <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
                               {review.images.map((image, index) => (
                                 <a
@@ -1735,18 +1854,52 @@ export default function ProductDetailsPage({
                                     loading="lazy"
                                   />
 
-                                  <span className="absolute bottom-2 left-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold text-white">
+                                  <span className="absolute bottom-2 left-2 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-bold text-white">
                                     View
                                   </span>
                                 </a>
                               ))}
                             </div>
+                          ) : (
+                            <div className="mt-4 rounded-2xl border border-gray-800 bg-black/35 px-4 py-5 text-center">
+                              <p className="text-xs font-semibold text-gray-500">
+                                No customer photo added
+                              </p>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                      </article>
+                    );
+                  })}
+                </div>
+
+                {reviews.length > 1 && (
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-500">
+                      Swipe or use arrows to see more reviews.
+                    </p>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => scrollReviewSlider("prev")}
+                        className="grid h-10 w-10 place-items-center rounded-full border border-gray-800 bg-gray-950 text-lg font-black text-gray-300 transition hover:border-orange-500 hover:text-orange-300"
+                        aria-label="Previous review"
+                      >
+                        ‹
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => scrollReviewSlider("next")}
+                        className="grid h-10 w-10 place-items-center rounded-full border border-gray-800 bg-gray-950 text-lg font-black text-gray-300 transition hover:border-orange-500 hover:text-orange-300"
+                        aria-label="Next review"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="rounded-3xl border border-dashed border-gray-800 bg-gray-950 px-5 py-10 text-center">

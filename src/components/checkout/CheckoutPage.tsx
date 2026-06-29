@@ -1,5 +1,3 @@
-// src/app/checkout/page.tsx
-
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -7,9 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
-import { FaCheckCircle, FaMinus, FaPlus, FaTrash } from "react-icons/fa";
+import { FaCheckCircle, FaMinus, FaPlus, FaTicketAlt, FaTrash } from "react-icons/fa";
 import type { Product } from "@/types/product";
-import type { DeliveryChargeSetting, DeliveryType, Order } from "@/types/order";
+import type {
+  AppliedCouponCalculation,
+  Coupon,
+  DeliveryChargeSetting,
+  DeliveryType,
+  Order,
+} from "@/types/order";
 import {
   bdDistrictOptions,
   getDeliveryChargeByDistrict,
@@ -17,10 +21,7 @@ import {
 } from "@/types/order";
 import { formatPrice } from "@/lib/formatPrice";
 
-const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(
-  /\/+$/,
-  "",
-);
+const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(/\/+$/, "");
 const CART_STORAGE_KEY = "digital-xpress-cart";
 
 type SessionTokenShape = {
@@ -113,7 +114,7 @@ function getSessionToken(session: unknown): string {
 
 function money(value: unknown) {
   const parsed = Number(value || 0);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : 0;
 }
 
 function isValidPhone(value: string) {
@@ -159,16 +160,11 @@ function normalizeDeliveryChargePayload(data: unknown): DeliveryChargeSetting[] 
       .filter((item): item is DeliveryChargeSetting => Boolean(item));
   }
 
-  if (
-    payload?.chargeByDistrict &&
-    typeof payload.chargeByDistrict === "object"
-  ) {
-    return Object.entries(payload.chargeByDistrict).map(
-      ([district, charge]) => ({
-        district,
-        charge: Math.max(Math.round(Number(charge) || 0), 0),
-      }),
-    );
+  if (payload?.chargeByDistrict && typeof payload.chargeByDistrict === "object") {
+    return Object.entries(payload.chargeByDistrict).map(([district, charge]) => ({
+      district,
+      charge: Math.max(Math.round(Number(charge) || 0), 0),
+    }));
   }
 
   return [];
@@ -181,12 +177,13 @@ export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState<CartProduct[]>([]);
   const [form, setForm] = useState<CheckoutFormState>(initialForm);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [deliveryChargeSettings, setDeliveryChargeSettings] = useState<
-    DeliveryChargeSetting[]
-  >([]);
+  const [deliveryChargeSettings, setDeliveryChargeSettings] = useState<DeliveryChargeSetting[]>([]);
   const [deliveryChargeLoading, setDeliveryChargeLoading] = useState(true);
-  const [deliveryChargeLoadFailed, setDeliveryChargeLoadFailed] =
-    useState(false);
+  const [deliveryChargeLoadFailed, setDeliveryChargeLoadFailed] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponCalculation, setCouponCalculation] = useState<AppliedCouponCalculation | null>(null);
+  const [couponApplying, setCouponApplying] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
 
@@ -194,22 +191,26 @@ export default function CheckoutPage() {
   const user = session?.user;
 
   const subtotal = useMemo(() => {
-    return cartItems.reduce((total, item) => {
-      const price = money(item.sellingPrice || item.price || 0);
-      return total + price * Math.max(Number(item.quantity || 1), 1);
-    }, 0);
+    return money(
+      cartItems.reduce((total, item) => {
+        const price = money(item.sellingPrice || item.price || 0);
+        return total + price * Math.max(Number(item.quantity || 1), 1);
+      }, 0),
+    );
   }, [cartItems]);
+
+  const couponDiscount = money(couponCalculation?.discountAmount || 0);
+  const discountedSubtotal = money(Math.max(subtotal - couponDiscount, 0));
 
   const deliveryCharge = useMemo(() => {
     return getDeliveryChargeByDistrict(form.district, deliveryChargeSettings);
   }, [form.district, deliveryChargeSettings]);
 
   const grandTotal = useMemo(() => {
-    return subtotal + deliveryCharge;
-  }, [subtotal, deliveryCharge]);
+    return money(discountedSubtotal + deliveryCharge);
+  }, [discountedSubtotal, deliveryCharge]);
 
-  const submitDisabled =
-    submitting || deliveryChargeLoading || deliveryChargeLoadFailed;
+  const submitDisabled = submitting || deliveryChargeLoading || deliveryChargeLoadFailed || couponApplying;
 
   useEffect(() => {
     setCartItems(readCart());
@@ -231,12 +232,9 @@ export default function CheckoutPage() {
         setDeliveryChargeLoading(true);
         setDeliveryChargeLoadFailed(false);
 
-        const res = await fetch(
-          `${API_BASE}/api/v1/orders/delivery-charges/public`,
-          {
-            cache: "no-store",
-          },
-        );
+        const res = await fetch(`${API_BASE}/api/v1/orders/delivery-charges/public`, {
+          cache: "no-store",
+        });
 
         const data = await res.json().catch(() => ({}));
 
@@ -306,10 +304,8 @@ export default function CheckoutPage() {
           return {
             ...current,
             customerName: profile?.name || user?.name || current.customerName,
-            customerEmail:
-              profile?.email || user?.email || current.customerEmail,
-            recipientEmail:
-              profile?.email || user?.email || current.recipientEmail,
+            customerEmail: profile?.email || user?.email || current.customerEmail,
+            recipientEmail: profile?.email || user?.email || current.recipientEmail,
             customerPhone: profile?.mobile || current.customerPhone,
             customerAddress: profile?.address || current.customerAddress,
             district: resolvedDistrict || current.district || "Dhaka City",
@@ -340,15 +336,19 @@ export default function CheckoutPage() {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const clearAppliedCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCalculation(null);
+  };
+
   const updateQuantity = (productId: string, nextQuantity: number) => {
     const updated = cartItems.map((item) =>
-      item.id === productId
-        ? { ...item, quantity: Math.max(nextQuantity, 1) }
-        : item,
+      item.id === productId ? { ...item, quantity: Math.max(nextQuantity, 1) } : item,
     );
 
     setCartItems(updated);
     writeCart(updated);
+    clearAppliedCoupon();
   };
 
   const removeItem = (productId: string) => {
@@ -356,7 +356,81 @@ export default function CheckoutPage() {
 
     setCartItems(updated);
     writeCart(updated);
+    clearAppliedCoupon();
     toast.success("Item removed from cart");
+  };
+
+  const applyCoupon = async () => {
+    if (status !== "authenticated") {
+      toast.error("Coupon use korte hole login korte hobe");
+      return;
+    }
+
+    if (!API_BASE) {
+      toast.error("NEXT_PUBLIC_BACKEND_URL missing");
+      return;
+    }
+
+    if (!token) {
+      toast.error("Login token missing. Please login again.");
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      toast.error("Cart empty");
+      return;
+    }
+
+    const cleanCode = couponCode.trim().toUpperCase();
+
+    if (!cleanCode) {
+      toast.error("Coupon code dao");
+      return;
+    }
+
+    try {
+      setCouponApplying(true);
+
+      const res = await fetch(`${API_BASE}/api/v1/discounts/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          code: cleanCode,
+          items: cartItems.map((item) => ({
+            productId: item.id,
+            quantity: item.quantity || 1,
+          })),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        clearAppliedCoupon();
+        toast.error(data.message || "Coupon apply failed");
+        return;
+      }
+
+      setCouponCode(cleanCode);
+      setAppliedCoupon(data.coupon || null);
+      setCouponCalculation(data.calculation || null);
+      toast.success(data.message || "Coupon applied");
+    } catch (error) {
+      console.error(error);
+      clearAppliedCoupon();
+      toast.error("Coupon apply failed");
+    } finally {
+      setCouponApplying(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    clearAppliedCoupon();
+    toast.success("Coupon removed");
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -400,9 +474,7 @@ export default function CheckoutPage() {
     }
 
     if (!isValidPhone(form.customerPhone)) {
-      toast.error(
-        "Phone number 11 digit Bangladeshi number hote hobe, example 017xxxxxxxx",
-      );
+      toast.error("Phone number 11 digit Bangladeshi number hote hobe, example 017xxxxxxxx");
       return;
     }
 
@@ -427,7 +499,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           ...form,
-          deliveryCharge,
+          couponCode: couponCode.trim() || null,
           items: cartItems.map((item) => ({
             productId: item.id,
             quantity: item.quantity || 1,
@@ -445,6 +517,8 @@ export default function CheckoutPage() {
       setCreatedOrder(data.order);
       setCartItems([]);
       writeCart([]);
+      clearAppliedCoupon();
+      setCouponCode("");
     } catch (error) {
       console.error(error);
       toast.error("Checkout failed");
@@ -468,14 +542,8 @@ export default function CheckoutPage() {
       <div className="mx-auto max-w-3xl px-4 py-12">
         <div className="rounded-3xl border border-gray-800 bg-black p-8 text-center">
           <h1 className="text-2xl font-black text-white">Login Required</h1>
-          <p className="mt-3 text-sm leading-6 text-gray-400">
-            Checkout korte hole age login korte hobe. Login korar por tomar cart
-            thekei order complete korte parbe.
-          </p>
-          <Link
-            href={`/login?callbackUrl=${encodeURIComponent("/checkout")}`}
-            className="mt-6 inline-flex rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-700"
-          >
+          <p className="mt-3 text-gray-400">Checkout korte hole age login korte hobe.</p>
+          <Link href={`/login?callbackUrl=${encodeURIComponent("/checkout")}`} className="mt-6 inline-flex rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-700">
             Login Now
           </Link>
         </div>
@@ -484,160 +552,47 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 lg:py-10">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-white sm:text-3xl">
-          Checkout
-        </h1>
-        <p className="mt-2 text-sm text-gray-400">
-          Submit the order after filling in the missing information here.
-        </p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-400">Checkout</p>
+        <h1 className="mt-2 text-3xl font-black text-white sm:text-4xl">Complete Your Order</h1>
+        <p className="mt-3 text-sm leading-7 text-gray-400">Cash on delivery order. Coupon discount final calculation backend theke confirm hobe.</p>
       </div>
 
-      {cartItems.length === 0 ? (
+      {cartItems.length === 0 && !createdOrder ? (
         <div className="rounded-3xl border border-gray-800 bg-black p-8 text-center">
-          <h2 className="text-xl font-bold text-white">Your cart is empty</h2>
-          <p className="mt-2 text-sm text-gray-400">
-            To place an order, you need to add a product first.
-          </p>
-          <Link
-            href="/products"
-            className="mt-6 inline-flex rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-700"
-          >
+          <h2 className="text-xl font-black text-white">Your cart is empty</h2>
+          <p className="mt-2 text-gray-400">Order korte product add koro.</p>
+          <Link href="/products" className="mt-6 inline-flex rounded-2xl bg-orange-600 px-6 py-3 font-bold text-white transition hover:bg-orange-700">
             Browse Products
           </Link>
         </div>
       ) : (
-        <form
-          onSubmit={handleSubmit}
-          className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]"
-        >
-          <div className="space-y-5">
+        <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-6">
             <section className="rounded-3xl border border-gray-800 bg-black p-4 sm:p-5">
-              <h2 className="text-lg font-black text-white">
-                Delivery Information
-              </h2>
-
-              <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-300">
-                <label className="inline-flex cursor-pointer items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={form.deliveryType === "home"}
-                    onChange={() => setField("deliveryType", "home")}
-                    className="h-4 w-4 accent-orange-500"
-                  />
-                  Home Delivery
-                </label>
-
-                <label className="inline-flex cursor-pointer items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={form.deliveryType === "point"}
-                    onChange={() => setField("deliveryType", "point")}
-                    className="h-4 w-4 accent-orange-500"
-                  />
-                  Point Delivery
-                </label>
-              </div>
+              <h2 className="text-lg font-black text-white">Delivery Information</h2>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <TextField
-                  label="Phone#"
-                  value={form.customerPhone}
-                  onChange={(value) => setField("customerPhone", value)}
-                  placeholder="Type Phone Number"
-                  required
-                />
-
-                <TextField
-                  label="Name"
-                  value={form.customerName}
-                  onChange={(value) => setField("customerName", value)}
-                  placeholder="Type Recipient Name"
-                  required
-                />
-
-                <TextField
-                  label="Email"
-                  value={form.customerEmail}
-                  onChange={(value) => setField("customerEmail", value)}
-                  placeholder="Type Customer Email"
-                />
-
-                <TextField
-                  label="Recipient Email"
-                  value={form.recipientEmail}
-                  onChange={(value) => setField("recipientEmail", value)}
-                  placeholder="Type Recipient Email"
-                />
-
-                <TextAreaField
-                  label="Address"
-                  value={form.customerAddress}
-                  onChange={(value) => setField("customerAddress", value)}
-                  placeholder="Type Address"
-                  required
-                />
-
-                <DistrictSelect
-                  label="District"
-                  value={form.district}
-                  onChange={(value) => setField("district", value)}
-                  required
-                />
-
-                <div className="sm:col-span-2 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-orange-300/80">
-                        Selected District Delivery Charge
-                      </p>
-                      <p className="mt-1 text-sm font-bold text-white">
-                        {form.district}
-                      </p>
-                    </div>
-
-                    <p className="text-xl font-black text-orange-300">
-                      {deliveryChargeLoading
-                        ? "Loading..."
-                        : deliveryChargeLoadFailed
-                          ? "Load failed"
-                          : formatPrice(deliveryCharge)}
-                    </p>
-                  </div>
-
-                  {!deliveryChargeLoading &&
-                    !deliveryChargeLoadFailed &&
-                    deliveryChargeSettings.length === 0 && (
-                      <p className="mt-3 text-xs leading-5 text-orange-200/80">
-                        Delivery charge settings empty. Admin panel theke
-                        district wise charge save koro.
-                      </p>
-                    )}
-                </div>
-
-                <TextField
-                  label="Thana"
-                  value={form.thana}
-                  onChange={(value) => setField("thana", value)}
-                  placeholder="Type Thana"
-                />
-
-                <TextField
-                  label="Alternative Phone"
-                  value={form.alternativePhone}
-                  onChange={(value) => setField("alternativePhone", value)}
-                  placeholder="Type Alternative Phone"
-                />
-
+                <TextField label="Recipient Name" value={form.customerName} onChange={(value) => setField("customerName", value)} required />
+                <TextField label="Phone Number" value={form.customerPhone} onChange={(value) => setField("customerPhone", value)} placeholder="017xxxxxxxx" required />
+                <TextField label="Alternative Phone" value={form.alternativePhone} onChange={(value) => setField("alternativePhone", value)} placeholder="Optional" />
+                <TextField label="Customer Email" value={form.customerEmail} onChange={(value) => setField("customerEmail", value)} placeholder="Optional" />
+                <TextField label="Recipient Email" value={form.recipientEmail} onChange={(value) => setField("recipientEmail", value)} placeholder="Optional" />
+                <DistrictSelect label="District" value={form.district} onChange={(value) => setField("district", value)} required />
+                <TextField label="Thana / Area" value={form.thana} onChange={(value) => setField("thana", value)} placeholder="Jurain" />
+                <label className="block">
+                  <span className="text-sm font-semibold text-gray-300">Delivery Type</span>
+                  <select value={form.deliveryType} onChange={(event) => setField("deliveryType", event.target.value as DeliveryType)} className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10">
+                    <option value="home">Home Delivery</option>
+                    <option value="point">Pickup Point</option>
+                  </select>
+                </label>
                 <div className="sm:col-span-2">
-                  <TextAreaField
-                    label="Note"
-                    value={form.note}
-                    onChange={(value) => setField("note", value)}
-                    placeholder="Type note max 400 chars"
-                    maxLength={400}
-                  />
+                  <TextAreaField label="Full Address" value={form.customerAddress} onChange={(value) => setField("customerAddress", value)} required placeholder="House, road, area details" maxLength={250} />
+                </div>
+                <div className="sm:col-span-2">
+                  <TextAreaField label="Order Note" value={form.note} onChange={(value) => setField("note", value)} placeholder="Optional note" maxLength={400} />
                 </div>
               </div>
             </section>
@@ -645,72 +600,42 @@ export default function CheckoutPage() {
             <section className="rounded-3xl border border-gray-800 bg-black p-4 sm:p-5">
               <h2 className="text-lg font-black text-white">Order Items</h2>
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-5 space-y-3">
                 {cartItems.map((item) => {
-                  const price = money(item.sellingPrice || item.price || 0);
                   const quantity = Math.max(Number(item.quantity || 1), 1);
-                  const imageUrl = item.mainImageUrl || item.image;
+                  const price = money(item.sellingPrice || item.price || 0);
+                  const imageUrl = item.mainImageUrl || item.image || "";
+                  const lineDiscount = couponCalculation?.itemDiscounts.find((discount) => discount.productId === item.id)?.lineDiscountAmount || 0;
+                  const lineTotal = money(price * quantity - lineDiscount);
 
                   return (
-                    <div
-                      key={item.id}
-                      className="flex gap-3 rounded-2xl border border-gray-800 bg-gray-950 p-3"
-                    >
+                    <div key={item.id} className="flex gap-3 rounded-2xl border border-gray-800 bg-gray-950 p-3">
                       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-black">
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={item.name}
-                            className="h-full w-full object-contain p-1"
-                          />
-                        ) : null}
+                        {imageUrl ? <img src={imageUrl} alt={item.name} className="h-full w-full object-contain p-1" /> : null}
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h3 className="line-clamp-2 text-sm font-bold text-white">
-                          {item.name}
-                        </h3>
-                        <p className="mt-1 text-xs text-gray-500">
-                          {formatPrice(price)} each
-                        </p>
+                        <h3 className="line-clamp-2 text-sm font-bold text-white">{item.name}</h3>
+                        <p className="mt-1 text-xs text-gray-500">{formatPrice(price)} each</p>
+
+                        {lineDiscount > 0 && (
+                          <p className="mt-1 text-xs font-semibold text-green-400">Coupon discount: -{formatPrice(lineDiscount)}</p>
+                        )}
 
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                           <div className="inline-flex items-center overflow-hidden rounded-xl border border-gray-800 bg-black">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(item.id, quantity - 1)
-                              }
-                              className="grid h-9 w-9 place-items-center text-gray-300 transition hover:bg-gray-900"
-                            >
+                            <button type="button" onClick={() => updateQuantity(item.id, quantity - 1)} className="grid h-9 w-9 place-items-center text-gray-300 transition hover:bg-gray-900">
                               <FaMinus size={11} />
                             </button>
-
-                            <span className="min-w-10 px-3 text-center text-sm font-bold text-white">
-                              {quantity}
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(item.id, quantity + 1)
-                              }
-                              className="grid h-9 w-9 place-items-center text-gray-300 transition hover:bg-gray-900"
-                            >
+                            <span className="min-w-10 px-3 text-center text-sm font-bold text-white">{quantity}</span>
+                            <button type="button" onClick={() => updateQuantity(item.id, quantity + 1)} className="grid h-9 w-9 place-items-center text-gray-300 transition hover:bg-gray-900">
                               <FaPlus size={11} />
                             </button>
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <p className="text-sm font-black text-orange-400">
-                              {formatPrice(price * quantity)}
-                            </p>
-
-                            <button
-                              type="button"
-                              onClick={() => removeItem(item.id)}
-                              className="grid h-9 w-9 place-items-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 transition hover:bg-red-600 hover:text-white"
-                            >
+                            <p className="text-sm font-black text-orange-400">{formatPrice(lineTotal)}</p>
+                            <button type="button" onClick={() => removeItem(item.id)} className="grid h-9 w-9 place-items-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 transition hover:bg-red-600 hover:text-white">
                               <FaTrash size={12} />
                             </button>
                           </div>
@@ -726,44 +651,48 @@ export default function CheckoutPage() {
           <aside className="h-fit rounded-3xl border border-gray-800 bg-black p-4 sm:p-5 lg:sticky lg:top-24">
             <h2 className="text-lg font-black text-white">Order Summary</h2>
 
+            <div className="mt-5 rounded-2xl border border-gray-800 bg-gray-950 p-3">
+              <label className="text-sm font-semibold text-gray-300">Coupon Code</label>
+              <div className="mt-2 flex gap-2">
+                <input value={couponCode} onChange={(event) => { setCouponCode(event.target.value.toUpperCase()); clearAppliedCoupon(); }} placeholder="EID10" className="min-w-0 flex-1 rounded-xl border border-gray-800 bg-black px-3 py-2 text-sm font-bold uppercase text-white outline-none transition placeholder:text-gray-700 focus:border-orange-500" />
+                {appliedCoupon ? (
+                  <button type="button" onClick={removeCoupon} className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-600 hover:text-white">
+                    Remove
+                  </button>
+                ) : (
+                  <button type="button" onClick={applyCoupon} disabled={couponApplying} className="rounded-xl bg-orange-600 px-3 py-2 text-xs font-black text-white transition hover:bg-orange-700 disabled:bg-gray-700">
+                    {couponApplying ? "..." : "Apply"}
+                  </button>
+                )}
+              </div>
+
+              {appliedCoupon && couponCalculation && (
+                <div className="mt-3 rounded-xl border border-green-500/20 bg-green-500/10 p-3 text-xs text-green-300">
+                  <div className="flex items-center gap-2 font-black">
+                    <FaTicketAlt /> {appliedCoupon.code} applied
+                  </div>
+                  <p className="mt-1">Discount: {appliedCoupon.discountPercentage}% = {formatPrice(couponCalculation.discountAmount)}</p>
+                </div>
+              )}
+            </div>
+
             <div className="mt-5 space-y-3 text-sm">
               <SummaryRow label="Subtotal" value={formatPrice(subtotal)} />
-              <SummaryRow
-                label="Delivery Charge"
-                value={
-                  deliveryChargeLoading
-                    ? "Loading..."
-                    : deliveryChargeLoadFailed
-                      ? "Load failed"
-                      : formatPrice(deliveryCharge)
-                }
-              />
+              <SummaryRow label="Coupon Discount" value={couponDiscount > 0 ? `-${formatPrice(couponDiscount)}` : formatPrice(0)} />
+              <SummaryRow label="Discounted Subtotal" value={formatPrice(discountedSubtotal)} />
+              <SummaryRow label="Delivery Charge" value={deliveryChargeLoading ? "Loading..." : deliveryChargeLoadFailed ? "Load failed" : formatPrice(deliveryCharge)} />
               <SummaryRow label="Payment Method" value="Cash on Delivery" />
             </div>
 
             <div className="mt-5 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-orange-300/80">
-                Total COD Amount
-              </p>
+              <p className="text-xs uppercase tracking-[0.16em] text-orange-300/80">Total COD Amount</p>
               <p className="mt-2 text-3xl font-black text-white">
-                {deliveryChargeLoading || deliveryChargeLoadFailed
-                  ? formatPrice(subtotal)
-                  : formatPrice(grandTotal)}
+                {deliveryChargeLoading || deliveryChargeLoadFailed ? formatPrice(discountedSubtotal) : formatPrice(grandTotal)}
               </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitDisabled}
-              className="mt-5 w-full rounded-2xl bg-orange-600 px-5 py-4 text-sm font-black text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400"
-            >
-              {submitting
-                ? "Placing Order..."
-                : deliveryChargeLoading
-                  ? "Loading Delivery Charge..."
-                  : deliveryChargeLoadFailed
-                    ? "Refresh Page"
-                    : "Confirm Order"}
+            <button type="submit" disabled={submitDisabled} className="mt-5 w-full rounded-2xl bg-orange-600 px-5 py-4 text-sm font-black text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
+              {submitting ? "Placing Order..." : deliveryChargeLoading ? "Loading Delivery Charge..." : deliveryChargeLoadFailed ? "Refresh Page" : "Confirm Order"}
             </button>
           </aside>
         </form>
@@ -776,42 +705,21 @@ export default function CheckoutPage() {
               <FaCheckCircle size={34} />
             </div>
 
-            <h2 className="mt-5 text-2xl font-black text-white">
-              Order Received
-            </h2>
+            <h2 className="mt-5 text-2xl font-black text-white">Order Received</h2>
 
-            <p className="mt-3 text-sm leading-7 text-gray-300">
-              আপনার অর্ডারটি গ্রহণ করা হয়েছে। খুব শীঘ্রই আমাদের প্রতিনিধি
-              আপনাকে call করবে order টি confirm করার জন্য।
-            </p>
+            <p className="mt-3 text-sm leading-7 text-gray-300">আপনার অর্ডারটি গ্রহণ করা হয়েছে। খুব শীঘ্রই আমাদের প্রতিনিধি আপনাকে call করবে order টি confirm করার জন্য।</p>
 
             <div className="mt-5 rounded-2xl border border-gray-800 bg-gray-950 p-4 text-left text-sm">
               <SummaryRow label="Invoice" value={createdOrder.invoiceNo} />
               <SummaryRow label="Status" value="Pending" />
-              <SummaryRow
-                label="Delivery Charge"
-                value={formatPrice(createdOrder.deliveryCharge)}
-              />
-              <SummaryRow
-                label="COD Amount"
-                value={formatPrice(createdOrder.codAmount)}
-              />
+              {createdOrder.couponCode ? <SummaryRow label="Coupon" value={`${createdOrder.couponCode} (-${formatPrice(createdOrder.couponDiscountAmount || createdOrder.discountAmount || 0)})`} /> : null}
+              <SummaryRow label="Delivery Charge" value={formatPrice(createdOrder.deliveryCharge)} />
+              <SummaryRow label="COD Amount" value={formatPrice(createdOrder.codAmount)} />
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Link
-                href="/my-orders"
-                className="rounded-2xl border border-gray-700 px-5 py-3 font-bold text-gray-200 transition hover:bg-gray-900"
-              >
-                View My Orders
-              </Link>
-
-              <Link
-                href="/products"
-                className="rounded-2xl bg-orange-600 px-5 py-3 font-bold text-white transition hover:bg-orange-700"
-              >
-                Continue Shopping
-              </Link>
+              <Link href="/my-orders" className="rounded-2xl border border-gray-700 px-5 py-3 font-bold text-gray-200 transition hover:bg-gray-900">View My Orders</Link>
+              <Link href="/products" className="rounded-2xl bg-orange-600 px-5 py-3 font-bold text-white transition hover:bg-orange-700">Continue Shopping</Link>
             </div>
           </div>
         </div>
@@ -839,12 +747,7 @@ function TextField({
         {label}
         {required ? " *" : ""}
       </span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
-      />
+      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10" />
     </label>
   );
 }
@@ -866,11 +769,7 @@ function DistrictSelect({
         {label}
         {required ? " *" : ""}
       </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
-      >
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10">
         {bdDistrictOptions.map((district) => (
           <option key={district} value={district} className="bg-black text-white">
             {district}
@@ -902,14 +801,7 @@ function TextAreaField({
         {label}
         {required ? " *" : ""}
       </span>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        rows={4}
-        className="mt-2 w-full resize-none rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
-      />
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} maxLength={maxLength} rows={4} className="mt-2 w-full resize-none rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10" />
     </label>
   );
 }

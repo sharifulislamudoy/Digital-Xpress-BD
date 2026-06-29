@@ -1,5 +1,3 @@
-// src/types/order.ts
-
 export type OrderStatus =
   | "pending"
   | "processing"
@@ -11,6 +9,67 @@ export type OrderStatus =
 export type PaymentStatus = "unpaid" | "partial" | "paid";
 export type DeliveryType = "home" | "point";
 
+export type CouponScope = "ALL_PRODUCTS" | "CATEGORY" | "PRODUCT";
+
+export interface CouponCategoryRef {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface CouponProductRef {
+  id: string;
+  name: string;
+  slug: string;
+  sku?: string | null;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  title?: string | null;
+  description?: string | null;
+  scope: CouponScope;
+  discountPercentage: number;
+  maxDiscountAmount?: number | null;
+  minOrderAmount: number;
+  usageLimit?: number | null;
+  usedCount: number;
+  remainingUses?: number | null;
+  categoryId?: string | null;
+  category?: CouponCategoryRef | null;
+  productId?: string | null;
+  product?: CouponProductRef | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  isActive: boolean;
+  isExpired?: boolean;
+  isUpcoming?: boolean;
+  isUsageFinished?: boolean;
+  canUseNow?: boolean;
+  createdById?: string | null;
+  createdByName?: string | null;
+  createdByEmail?: string | null;
+  orderCount?: number;
+  redemptionCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppliedCouponCalculation {
+  subtotal: number;
+  eligibleSubtotal: number;
+  discountAmount: number;
+  finalSubtotal: number;
+  itemDiscounts: Array<{
+    productId: string;
+    quantity: number;
+    originalLineTotal: number;
+    lineDiscountAmount: number;
+    finalLineTotal: number;
+  }>;
+}
+
 export interface OrderItem {
   id: string;
   orderId: string;
@@ -20,8 +79,25 @@ export interface OrderItem {
   productImage?: string | null;
   sku?: string | null;
   quantity: number;
+
+  /** Final unit selling price after coupon discount. */
   unitPrice: number;
+
+  /** Final line total after coupon discount. */
   totalPrice: number;
+
+  /** Product sellingPrice before coupon discount. */
+  originalUnitPrice?: number;
+
+  /** Coupon discount per unit. */
+  unitDiscountAmount?: number;
+
+  /** Same as unitPrice, stored clearly for reports. */
+  discountedUnitPrice?: number;
+
+  /** Coupon discount for this full line. */
+  lineDiscountAmount?: number;
+
   createdAt?: string;
 
   unitCostPrice?: number;
@@ -46,9 +122,19 @@ export interface Order {
 
   deliveryType: DeliveryType;
 
+  /** Final discounted product subtotal. Delivery charge is separate. */
   totalAmount: number;
   deliveryCharge: number;
+
+  /** Total discount amount. For now this is coupon discount amount. */
   discountAmount: number;
+
+  couponId?: string | null;
+  couponCode?: string | null;
+  couponDiscountScope?: CouponScope | null;
+  couponDiscountPercentage?: number | null;
+  couponDiscountAmount?: number;
+
   paidAmount: number;
   dueAmount: number;
   codAmount: number;
@@ -282,6 +368,12 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   cancelled: "Cancelled",
 };
 
+export const couponScopeLabels: Record<CouponScope, string> = {
+  ALL_PRODUCTS: "All products",
+  CATEGORY: "Single category",
+  PRODUCT: "Single product",
+};
+
 export function canCancelOrder(status: OrderStatus) {
   return status === "pending";
 }
@@ -311,6 +403,10 @@ export interface OrderProfitFieldsPatch {
   otherCost?: number;
   netProfit?: number;
   inventoryRestoredAt?: string | null;
+}
+
+export function getOrderPayableTotal(order: Pick<Order, "totalAmount" | "deliveryCharge">) {
+  return Number((Number(order.totalAmount || 0) + Number(order.deliveryCharge || 0)).toFixed(2));
 }
 
 export default getDeliveryChargeByDistrict;

@@ -18,6 +18,7 @@ import {
   FaWarehouse,
   FaChartLine,
   FaStar,
+  FaTags,
 } from "react-icons/fa";
 import { signOut } from "next-auth/react";
 
@@ -50,6 +51,7 @@ const SidebarContent = ({
     { name: "Users", href: "/moderator/users", icon: FaUsers },
     { name: "Reviews", href: "/moderator/reviews", icon: FaStar },
     { name: "Banners", href: "/moderator/banners", icon: FaImages },
+    { name: "Discounts", href: "/moderator/discounts", icon: FaTags }
   ];
 
   const handleLinkClick = () => {
