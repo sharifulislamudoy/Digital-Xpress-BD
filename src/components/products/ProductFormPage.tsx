@@ -58,6 +58,7 @@ type ProductFormState = {
   inStock: boolean;
   isPublished: boolean;
   isFeatured: boolean;
+  isNewArrival: boolean;
   isBestSeller: boolean;
   isTrending: boolean;
   isRecommended: boolean;
@@ -147,6 +148,7 @@ const defaultForm: ProductFormState = {
   inStock: true,
   isPublished: true,
   isFeatured: false,
+  isNewArrival: false,
   isBestSeller: false,
   isTrending: false,
   isRecommended: false,
@@ -232,6 +234,7 @@ const booleanFields: Array<keyof ProductFormState> = [
   "inStock",
   "isPublished",
   "isFeatured",
+  "isNewArrival",
   "isBestSeller",
   "isTrending",
   "isRecommended",
@@ -295,6 +298,7 @@ function formFromProduct(product: Product): ProductFormState {
     inStock: product.inStock ?? true,
     isPublished: product.isPublished ?? true,
     isFeatured: product.isFeatured ?? false,
+    isNewArrival: product.isNewArrival ?? false,
     isBestSeller: product.isBestSeller ?? false,
     isTrending: product.isTrending ?? false,
     isRecommended: product.isRecommended ?? false,
@@ -1299,6 +1303,12 @@ export default function ProductFormPage({
                   label="Featured"
                   checked={form.isFeatured}
                   onChange={(value) => setField("isFeatured", value)}
+                />
+
+                <SwitchField
+                  label="New Arrival"
+                  checked={form.isNewArrival}
+                  onChange={(value) => setField("isNewArrival", value)}
                 />
 
                 <SwitchField

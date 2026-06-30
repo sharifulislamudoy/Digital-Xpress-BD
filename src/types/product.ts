@@ -147,6 +147,7 @@ export interface Product {
   isPublished?: boolean;
 
   isFeatured?: boolean;
+  isNewArrival?: boolean;
   isBestSeller?: boolean;
   isTrending?: boolean;
   isRecommended?: boolean;
@@ -296,6 +297,7 @@ export function getProductBadges(product: Product): string[] {
   const badges: string[] = [];
 
   if (product.isFeatured) badges.push("Featured");
+  if (product.isNewArrival) badges.push("New Arrival");
   if (product.isBestSeller) badges.push("Best Seller");
   if (product.isTrending) badges.push("Trending");
   if (product.isRecommended) badges.push("Recommended");
