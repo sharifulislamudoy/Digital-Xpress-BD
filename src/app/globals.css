@@ -96,3 +96,31 @@ body {
     transform: translateX(100%);
   }
 }
+
+.category-card-swiper {
+  width: 100%;
+  overflow: hidden;
+  padding: 2px 2px 14px;
+}
+
+.category-card-swiper .swiper-wrapper {
+  align-items: stretch;
+  transition-timing-function: cubic-bezier(0.76, 0, 0.24, 1) !important;
+}
+
+.category-card-swiper .swiper-slide {
+  height: auto;
+  overflow: visible;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.category-card-swiper .swiper-slide>a {
+  height: 100%;
+}
+
+@media (max-width: 767px) {
+  .category-card-swiper .swiper-wrapper {
+    transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1) !important;
+  }
+}
