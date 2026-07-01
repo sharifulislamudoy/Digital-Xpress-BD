@@ -61,9 +61,6 @@ type PurchaseForm = {
   unitCostPrice: string;
   mrp: string;
   sellingPrice: string;
-  supplierName: string;
-  supplierPhone: string;
-  supplierInvoiceNumber: string;
   purchaseDate: string;
   note: string;
   updateProductPrice: boolean;
@@ -84,9 +81,6 @@ const emptyPurchaseForm: PurchaseForm = {
   unitCostPrice: "",
   mrp: "",
   sellingPrice: "",
-  supplierName: "",
-  supplierPhone: "",
-  supplierInvoiceNumber: "",
   purchaseDate: new Date().toISOString().slice(0, 10),
   note: "",
   updateProductPrice: true,
@@ -829,7 +823,7 @@ export default function InventoryManagement({
                               {product.name}
                             </p>
                             <p className="truncate text-xs text-neutral-500">
-                              {product.sku || product.productCode || "No SKU"}
+                              {product.sku || "No SKU"}
                             </p>
                             <span
                               className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${getStockBadgeClass(product.stockStatus)}`}
@@ -1047,45 +1041,6 @@ export default function InventoryManagement({
               placeholder="Optional"
               type="number"
               min="0"
-            />
-          </Field>
-          <Field label="Supplier Name">
-            <input
-              className={inputClass()}
-              value={purchaseForm.supplierName}
-              onChange={(event) =>
-                setPurchaseForm((prev) => ({
-                  ...prev,
-                  supplierName: event.target.value,
-                }))
-              }
-              placeholder="Optional"
-            />
-          </Field>
-          <Field label="Supplier Phone">
-            <input
-              className={inputClass()}
-              value={purchaseForm.supplierPhone}
-              onChange={(event) =>
-                setPurchaseForm((prev) => ({
-                  ...prev,
-                  supplierPhone: event.target.value,
-                }))
-              }
-              placeholder="Optional"
-            />
-          </Field>
-          <Field label="Supplier Invoice">
-            <input
-              className={inputClass()}
-              value={purchaseForm.supplierInvoiceNumber}
-              onChange={(event) =>
-                setPurchaseForm((prev) => ({
-                  ...prev,
-                  supplierInvoiceNumber: event.target.value,
-                }))
-              }
-              placeholder="Optional"
             />
           </Field>
           <Field label="Purchase Date">

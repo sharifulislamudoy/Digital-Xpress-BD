@@ -20,14 +20,8 @@ export interface InventoryBatch {
   mrp?: number | null;
   sellingPrice?: number | null;
   totalCost: number;
-  supplierName?: string | null;
-  supplierPhone?: string | null;
-  supplierInvoiceNumber?: string | null;
   purchaseDate: string;
   note?: string | null;
-  createdById?: string | null;
-  createdByName?: string | null;
-  createdByEmail?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,9 +37,6 @@ export interface InventoryMovement {
   reason?: string | null;
   referenceType?: string | null;
   referenceNo?: string | null;
-  createdById?: string | null;
-  createdByName?: string | null;
-  createdByEmail?: string | null;
   createdAt: string;
   product?: {
     id: string;
