@@ -73,8 +73,6 @@ const API_BASE_URL = (
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
 ).replace(/\/$/, "");
 
-const popularSearches = ["iPhone", "Laptop", "Headphone", "Smart Watch"];
-
 function formatPrice(value?: number | string | null) {
   const numericValue = Number(value || 0);
 
@@ -444,25 +442,6 @@ export const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700 sm:p-5">
-              {!canSearch && (
-                <div>
-                  <p className="mb-3 text-sm text-gray-400">
-                    Type at least 2 characters to see live results.
-                  </p>
-
-                  <div className="flex flex-wrap gap-3">
-                    {popularSearches.map((item) => (
-                      <button
-                        key={item}
-                        onClick={() => handlePopularSearch(item)}
-                        className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-sm text-gray-200 transition hover:border-orange-500 hover:text-orange-400"
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {canSearch && isLoading && (
                 <div className="flex min-h-[260px] flex-col items-center justify-center text-center text-gray-400">
