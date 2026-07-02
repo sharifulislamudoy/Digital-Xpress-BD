@@ -859,16 +859,16 @@ export default function DiscountManagement({
         )}
       </AnimatePresence>
 
-      <section className="rounded-3xl border border-gray-800 bg-black p-4 sm:p-6">
-        <div className="flex flex-col gap-3 border-b border-gray-800 pb-4 lg:flex-row lg:items-center lg:justify-between">
+      <section className="rounded-2xl border border-gray-800 bg-[#0a0a0a] p-3 sm:p-4">
+        <div className="flex flex-col gap-3 border-b border-gray-800 pb-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-black text-white">All Coupons</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-base font-black text-white">All Coupons</h2>
+            <p className="mt-1 text-xs text-gray-500">
               Created coupons, usage count, status, and quick actions.
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:w-[720px]">
+          <div className="grid gap-2 sm:grid-cols-3 lg:w-[600px]">
             <div className="relative">
               <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
 
@@ -877,7 +877,7 @@ export default function DiscountManagement({
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search coupon"
                 autoComplete="off"
-                className="w-full rounded-2xl border border-gray-800 bg-gray-950 py-3 pl-11 pr-10 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500"
+                className="w-full rounded-xl border border-gray-800 bg-gray-950 py-2.5 pl-10 pr-9 text-xs text-white outline-none transition placeholder:text-gray-600 focus:border-orange-500"
               />
 
               {tableLoading && (
@@ -890,7 +890,7 @@ export default function DiscountManagement({
               onChange={(event) =>
                 setScopeFilter(event.target.value as "all" | CouponScope)
               }
-              className="rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500"
+              className="rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500"
             >
               <option value="all">All Types</option>
               <option value="ALL_PRODUCTS">All Products</option>
@@ -905,7 +905,7 @@ export default function DiscountManagement({
                   event.target.value as "all" | "active" | "inactive",
                 )
               }
-              className="rounded-2xl border border-gray-800 bg-gray-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500"
+              className="rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -914,7 +914,7 @@ export default function DiscountManagement({
           </div>
         </div>
 
-        <div className="relative mt-5 overflow-x-auto">
+        <div className="relative mt-4 overflow-hidden rounded-2xl border border-gray-800 bg-black">
           {tableLoading && (
             <div className="absolute inset-0 z-20 flex items-start justify-center bg-black/35 pt-16 backdrop-blur-[1px]">
               <div className="flex items-center gap-2 rounded-2xl border border-orange-500/20 bg-black px-4 py-2 text-sm font-bold text-orange-300 shadow-xl">
@@ -925,23 +925,47 @@ export default function DiscountManagement({
           )}
 
           <table
-            className={`w-full min-w-[1100px] text-left text-sm transition ${
+            className={`w-full table-fixed divide-y divide-gray-800 text-left text-xs transition ${
               tableLoading ? "opacity-45" : "opacity-100"
             }`}
           >
-            <thead className="text-xs uppercase tracking-[0.12em] text-gray-500">
-              <tr className="border-b border-gray-800">
-                <th className="px-4 py-3">Coupon</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Discount</th>
-                <th className="px-4 py-3">Target</th>
-                <th className="px-4 py-3">Usage</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Action</th>
+            <colgroup>
+              <col className="w-[21%]" />
+              <col className="w-[13%]" />
+              <col className="w-[16%]" />
+              <col className="w-[20%]" />
+              <col className="w-[9%]" />
+              <col className="w-[11%]" />
+              <col className="w-[10%]" />
+            </colgroup>
+
+            <thead className="bg-gray-950">
+              <tr>
+                <th className="px-2.5 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Coupon
+                </th>
+                <th className="px-2.5 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Type
+                </th>
+                <th className="px-2.5 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Discount
+                </th>
+                <th className="px-2.5 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Target
+                </th>
+                <th className="px-2.5 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Usage
+                </th>
+                <th className="px-2.5 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Status
+                </th>
+                <th className="px-2.5 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Action
+                </th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody className="divide-y divide-gray-900">
               {coupons.map((coupon) => {
                 const badge = statusBadge(coupon);
 
@@ -955,72 +979,80 @@ export default function DiscountManagement({
                 return (
                   <tr
                     key={coupon.id}
-                    className="border-b border-gray-900 text-gray-300 hover:bg-gray-950"
+                    className="text-gray-300 hover:bg-gray-950"
                   >
-                    <td className="px-4 py-4">
-                      <p className="font-black text-white">{coupon.code}</p>
-                      <p className="mt-1 text-xs text-gray-500">
+                    <td className="px-2.5 py-3">
+                      <p className="truncate text-sm font-black text-white">
+                        {coupon.code}
+                      </p>
+                      <p className="mt-0.5 truncate text-[10px] text-gray-500">
                         {coupon.title || "No title"}
                       </p>
                     </td>
 
-                    <td className="px-4 py-4">
-                      {couponScopeLabels[coupon.scope]}
+                    <td className="px-2.5 py-3">
+                      <span className="block truncate text-[11px] font-semibold text-gray-300">
+                        {couponScopeLabels[coupon.scope]}
+                      </span>
                     </td>
 
-                    <td className="px-4 py-4">
-                      <p className="font-bold text-orange-300">
+                    <td className="px-2.5 py-3">
+                      <p className="text-sm font-bold text-orange-300">
                         {coupon.discountPercentage}%
                       </p>
 
-                      <p className="text-xs text-gray-500">
-                        Cap:{" "}
+                      <p className="truncate text-[10px] text-gray-500">
                         {coupon.maxDiscountAmount
-                          ? formatPrice(coupon.maxDiscountAmount)
+                          ? `Cap ${formatPrice(coupon.maxDiscountAmount)}`
                           : "No cap"}
                       </p>
                     </td>
 
-                    <td className="max-w-[260px] truncate px-4 py-4">
-                      {target}
+                    <td className="px-2.5 py-3">
+                      <p className="truncate text-[11px] font-medium text-gray-300" title={target}>
+                        {target}
+                      </p>
                     </td>
 
-                    <td className="px-4 py-4">
-                      <p className="font-bold text-white">
+                    <td className="px-2.5 py-3 text-center">
+                      <p className="truncate text-xs font-bold text-white">
                         {coupon.usedCount}/{coupon.usageLimit ?? "∞"}
                       </p>
 
-                      <p className="text-xs text-gray-500">
-                        Orders: {coupon.orderCount || 0}
+                      <p className="truncate text-[10px] text-gray-500">
+                        {coupon.orderCount || 0} orders
                       </p>
                     </td>
 
-                    <td className="px-4 py-4">
+                    <td className="px-2.5 py-3 text-center">
                       <button
                         type="button"
                         onClick={() => toggleCouponStatus(coupon)}
-                        className={`rounded-full border px-3 py-1 text-xs font-black ${badge.className}`}
+                        className={`max-w-full truncate rounded-full border px-2 py-1 text-[10px] font-black ${badge.className}`}
+                        title="Click to toggle status"
                       >
                         {badge.label}
                       </button>
                     </td>
 
-                    <td className="px-4 py-4">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-2.5 py-3">
+                      <div className="flex justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => editCoupon(coupon)}
-                          className="grid h-9 w-9 place-items-center rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-300 transition hover:bg-blue-600 hover:text-white"
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-300 transition hover:bg-blue-600 hover:text-white"
+                          title="Edit coupon"
                         >
-                          <FaEdit size={13} />
+                          <FaEdit size={11} />
                         </button>
 
                         <button
                           type="button"
                           onClick={() => deleteCoupon(coupon)}
-                          className="grid h-9 w-9 place-items-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 transition hover:bg-red-600 hover:text-white"
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 transition hover:bg-red-600 hover:text-white"
+                          title="Delete coupon"
                         >
-                          <FaTrash size={13} />
+                          <FaTrash size={11} />
                         </button>
                       </div>
                     </td>
@@ -1032,7 +1064,7 @@ export default function DiscountManagement({
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-4 py-10 text-center text-gray-500"
+                    className="px-4 py-10 text-center text-xs text-gray-500"
                   >
                     {tableLoading ? "Searching coupons..." : "No coupons found."}
                   </td>
